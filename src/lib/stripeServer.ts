@@ -1,4 +1,5 @@
-'use server';
+
+import 'server-only';
 
 import Stripe from 'stripe';
 import { getSecret } from './secretStore';
