@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import Stripe from 'stripe';
@@ -22,27 +23,32 @@ function encodeFeatures(features: string[]) {
 }
 
 export async function listProductsWithPrices() {
-  const stripe = await getStripe();
-  const prods = await stripe.products.list({ limit: 100, expand: ['data.default_price'] });
-  const prices = await stripe.prices.list({ limit: 100 });
-  const priceByProduct: Record<string, Stripe.Price[]> = {};
-  prices.data.forEach(p => {
-    if (typeof p.product === 'string') {
-      (priceByProduct[p.product] ||= []).push(p);
-    } else {
-      (priceByProduct[p.product.id] ||= []).push(p);
-    }
-  });
-  return prods.data.map(p => ({
-    id: p.id,
-    name: p.name,
-    description: p.description || '',
-    features: parseFeatures(p.metadata),
-    active: p.active,
-    default_price: typeof p.default_price === 'string' ? p.default_price : p.default_price || null,
-    images: p.images,
-    prices: priceByProduct[p.id] || []
-  }));
+  try {
+    const stripe = await getStripe();
+    const prods = await stripe.products.list({ limit: 100, expand: ['data.default_price'] });
+    const prices = await stripe.prices.list({ limit: 100 });
+    const priceByProduct: Record<string, Stripe.Price[]> = {};
+    prices.data.forEach(p => {
+      if (typeof p.product === 'string') {
+        (priceByProduct[p.product] ||= []).push(p);
+      } else {
+        (priceByProduct[p.product.id] ||= []).push(p);
+      }
+    });
+    return prods.data.map(p => ({
+      id: p.id,
+      name: p.name,
+      description: p.description || '',
+      features: parseFeatures(p.metadata),
+      active: p.active,
+      default_price: typeof p.default_price === 'string' ? p.default_price : p.default_price || null,
+      images: p.images,
+      prices: priceByProduct[p.id] || []
+    }));
+  } catch (error: any) {
+    console.error("Failed to fetch Stripe products:", error.message);
+    return [];
+  }
 }
 
 export async function upsertProduct(input: {
