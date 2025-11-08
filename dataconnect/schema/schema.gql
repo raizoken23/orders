@@ -1,0 +1,48 @@
+type User @table {
+  username: String!
+  email: String!
+  displayName: String!
+  role: String!
+  phoneNumber: String
+  photoUrl: String
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+type Project @table {
+  name: String!
+  startDate: Date!
+  createdAt: Timestamp!
+  description: String
+  endDate: Date
+  budget: Float
+  address: String
+  creator: User
+}
+
+type Trade @table {
+  name: String!
+  createdAt: Timestamp!
+  description: String
+  project: Project
+}
+
+type ScopeItem @table {
+  description: String!
+  estimatedCost: Float!
+  createdAt: Timestamp!
+  notes: String
+  estimatedHours: Float
+  unitOfMeasure: String
+  trade: Trade
+}
+
+type ProgressUpdate @table {
+  completionPercentage: Float!
+  updateDate: Date!
+  createdAt: Timestamp!
+  comments: String
+  photos: [String]
+  scopeItem: ScopeItem
+  updater: User
+}
