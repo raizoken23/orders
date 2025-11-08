@@ -32,11 +32,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  outputFileTracingIncludes: {
+    "/**/*": ["./pdfsys/**/*", "./public/satellite_base.pdf"]
+  },
+  serverExternalPackages: ["pypdf", "reportlab", "pymupdf", "undici", "stripe"],
   experimental: {
-    outputFileTracingIncludes: {
-      "/**/*": ["./pdfsys/**/*", "./public/satellite_base.pdf"]
-    },
-    serverComponentsExternalPackages: ["pypdf", "reportlab", "pymupdf", "undici", "stripe"]
+    // Kept for any future experimental flags, but the moved ones are now at the top level.
   }
 };
 
