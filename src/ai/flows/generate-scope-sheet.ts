@@ -27,24 +27,30 @@ const generateScopeSheetFlow = ai.defineFlow(
         outputSchema: GenerateScopeSheetOutputSchema,
     },
     async (data) => {
+        const masterTemplatePath = path.resolve(process.cwd(), 'public/satellite_base.pdf');
         const coordsPath = path.resolve(process.cwd(), 'pdfsys/coords.json.sample');
-        const templatePath = path.resolve(process.cwd(), 'public/satellite_base.pdf');
         const scriptPath = path.resolve(process.cwd(), 'pdfsys/stamp_pdf.py');
 
         const tempDir = os.tmpdir();
-        const uniqueId = Date.now();
-        const payloadPath = path.join(tempDir, `payload-${uniqueId}.json`);
-        const outputPath = path.join(tempDir, `output-${uniqueId}.pdf`);
+        const uniqueId = `pdf-gen-${Date.now()}`;
+        const runDir = path.join(tempDir, uniqueId);
+        await fs.mkdir(runDir, { recursive: true });
 
-        console.log(`[generateScopeSheetFlow] Temp Dir: ${tempDir}`);
+        const templatePath = path.join(runDir, 'template.pdf');
+        const payloadPath = path.join(runDir, 'payload.json');
+        const outputPath = path.join(runDir, 'output.pdf');
+        
+        console.log(`[generateScopeSheetFlow] Temp Dir: ${runDir}`);
         console.log(`[generateScopeSheetFlow] Coords Path: ${coordsPath}`);
-        console.log(`[generateScopeSheetFlow] Template Path: ${templatePath}`);
         console.log(`[generateScopeSheetFlow] Script Path: ${scriptPath}`);
         console.log(`[generateScopeSheetFlow] Payload Path: ${payloadPath}`);
         console.log(`[generateScopeSheetFlow] Output Path: ${outputPath}`);
+        console.log(`[generateScopeSheetFlow] Master Template Path: ${masterTemplatePath}`);
 
 
         await fs.writeFile(payloadPath, JSON.stringify(data, null, 2));
+        await fs.copyFile(masterTemplatePath, templatePath);
+
 
         try {
             const { stdout, stderr } = await ai.run('python', [
@@ -73,6 +79,7 @@ const generateScopeSheetFlow = ai.defineFlow(
             return { error: `Python script execution failed.`, stdout: execError.stdout, stderr: execError.stderr };
         } finally {
             await fs.unlink(payloadPath).catch((err) => console.log(`[cleanup] Failed to delete payload file: ${err.message}`));
+            await fs.unlink(templatePath).catch((err) => console.log(`[cleanup] Failed to delete template file: ${err.message}`));
             await fs.unlink(outputPath).catch((err) => console.log(`[cleanup] Failed to delete output file: ${err.message}`));
         }
     }

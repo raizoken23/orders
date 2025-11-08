@@ -153,7 +153,7 @@ export default function ScopeSheetPage() {
     try {
         const result = await generateScopeSheetPdf(values);
         
-        if (result.error || result.stderr || !result.pdfBase64) {
+        if (result.error || (result.stderr && !result.pdfBase64)) {
             console.error('PDF Generation Failed:', result);
             setErrorDetails(result);
             toast({
@@ -182,6 +182,9 @@ export default function ScopeSheetPage() {
         }
 
         const { pdfBase64 } = result;
+        if (!pdfBase64) {
+            throw new Error("PDF base64 string is missing in the result.");
+        }
         const byteCharacters = atob(pdfBase64);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
@@ -268,18 +271,17 @@ export default function ScopeSheetPage() {
                                 <Skeleton className="h-4 w-4/5 bg-slate-700" />
                               </div>
                             ) : (
-                               <pre className="whitespace-pre-wrap text-sky-300 bg-slate-900 p-3 rounded-md">{aiAnalysis || "No analysis available."}</pre>
+                               <div className="whitespace-pre-wrap text-sky-300 bg-slate-900 p-3 rounded-md">{aiAnalysis || "No analysis available."}</div>
                             )}
                         </div>
                         <Separator className="bg-slate-700" />
                         <div>
-                            <p className="font-bold text-red-400 mb-1">Raw Error (stderr):</p>
-                            <pre className="whitespace-pre-wrap">{errorDetails.stderr || 'No stderr output.'}</pre>
+                            <p className="font-bold text-gray-400 mb-1">Operational Trace (stdout):</p>
+                            <pre className="whitespace-pre-wrap text-gray-500 bg-slate-900 p-3 rounded-md">{errorDetails.stdout || 'No stdout output.'}</pre>
                         </div>
-                        
                         <div>
-                           <p className="font-bold text-gray-400 mb-1">Standard Output (stdout):</p>
-                           <pre className="whitespace-pre-wrap text-gray-500">{errorDetails.stdout || 'No stdout output.'}</pre>
+                            <p className="font-bold text-red-400 mb-1">Raw Error (stderr):</p>
+                            <pre className="whitespace-pre-wrap text-red-500 bg-slate-900 p-3 rounded-md">{errorDetails.stderr || 'No stderr output.'}</pre>
                         </div>
 
                     </div>
@@ -960,5 +962,3 @@ export default function ScopeSheetPage() {
     </Form>
   )
 }
-
-    
