@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -17,8 +18,9 @@ const tiers = [
     description: 'For individual inspectors getting started.',
     features: [
       'Digital Scope Sheets',
+      'Import Claim Data from Image',
       'Basic Roof Diagram Tool',
-      '5 AI Image Analyses / mo',
+      '15 AI Image Analyses / mo',
       'Email Support',
     ],
     buttonText: 'Get Started',
@@ -32,7 +34,7 @@ const tiers = [
     features: [
       'Everything in Basic, plus:',
       'Advanced Roof Diagram Tool',
-      '50 AI Image Analyses / mo',
+      '100 AI Image Analyses / mo',
       'Sub Sheet Templates',
       'Priority Support',
     ],
@@ -49,7 +51,7 @@ const tiers = [
       'Everything in Pro, plus:',
       'Unlimited AI Image Analyses',
       'Team & Claim Management',
-      'Custom Integrations',
+      'Custom Integrations & API Access',
       'Dedicated Account Manager',
     ],
     buttonText: 'Contact Sales',
