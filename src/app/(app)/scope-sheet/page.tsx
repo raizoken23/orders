@@ -68,7 +68,7 @@ const scopeSheetSchema = z.object({
   calcH: z.string().optional(),
   calcK: z.string().optional(),
   calcL: z.string().optional(),
-  calcM: z_string().optional(),
+  calcM: z.string().optional(),
   calcI: z.string().optional(),
   calcJ: z.string().optional(),
   rakeLF: z.string().optional(),
