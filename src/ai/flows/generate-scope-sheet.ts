@@ -1,5 +1,7 @@
 
 'use server';
+export const runtime = 'nodejs'; // Required: specify Node.js runtime for Python execution.
+
 /**
  * @fileOverview A flow that generates a PDF scope sheet by stamping form data onto a template using a Python script.
  *
@@ -9,7 +11,8 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { scopeSheetSchema } from '@/lib/schema/scope-sheet';
-import path from 'path';
+import path from 'node:path';
+import fs from 'node:fs';
 
 // Define the output schema to expect a base64 string or a structured error from Python
 const PythonOutputSchema = z.union([
@@ -17,8 +20,11 @@ const PythonOutputSchema = z.union([
         pdfBase64: z.string(),
     }),
     z.object({
-        error: z.string(),
-        detail: z.string().optional().nullable(),
+        error: z.object({
+            code: z.string(),
+            message: z.string(),
+            detail: z.string().optional().nullable(),
+        }),
     }),
 ]);
 
@@ -35,13 +41,15 @@ export async function generateScopeSheetPdf(data: z.infer<typeof scopeSheetSchem
         console.log(`[generateScopeSheetPdf] Template: ${template}`);
         console.log(`[generateScopeSheetPdf] Coords: ${coordsPath}`);
 
+        const coords = JSON.parse(fs.readFileSync(coordsPath,'utf8'));
+
         const { output, error: executionError } = await ai.run({
             runtime: 'python',
             file,
             fn: 'run', // This MUST match the function name in the Python script
             input: {
                 template,
-                coords: coordsPath,
+                coords,
                 payload: data,
             },
         });
@@ -56,18 +64,18 @@ export async function generateScopeSheetPdf(data: z.infer<typeof scopeSheetSchem
         }
         
         const result = output as z.infer<typeof PythonOutputSchema>;
-
-        if ('error' in result && result.error) {
-             console.error(`[generateScopeSheetPdf] Python script returned an error: ${result.error}`);
-             console.error(`[generateScopeSheetPdf] Python Traceback: ${result.detail}`);
+        
+        if (result && 'error' in result && result.error) {
+             console.error(`[generateScopeSheetPdf] Python script returned an error: ${result.error.message}`);
+             console.error(`[generateScopeSheetPdf] Python Traceback: ${result.error.detail}`);
              return {
-                error: result.error,
-                stderr: result.detail || `Python script failed. See error message.`,
-                stdout: `Python script failed. See stderr for details.`,
+                error: result.error.message,
+                stderr: result.error.detail || `Python script failed. See error message.`,
+                stdout: `Python script failed with code: ${result.error.code}.`,
             };
         }
 
-        if ('pdfBase64' in result) {
+        if (result && 'pdfBase64' in result) {
             return {
                 pdfBase64: result.pdfBase64,
             };

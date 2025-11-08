@@ -153,7 +153,7 @@ export default function ScopeSheetPage() {
     try {
         const result = await generateScopeSheetPdf(values);
         
-        if (result.error || (result.stderr && !result.pdfBase64)) {
+        if ('error' in result && (result.error || (result.stderr && !result.pdfBase64))) {
             console.error('PDF Generation Failed:', result);
             setErrorDetails(result);
             toast({
@@ -181,7 +181,7 @@ export default function ScopeSheetPage() {
             return;
         }
 
-        const { pdfBase64 } = result;
+        const { pdfBase64 } = result as { pdfBase64: string };
         if (!pdfBase64) {
             throw new Error("PDF base64 string is missing in the result.");
         }
@@ -206,8 +206,14 @@ export default function ScopeSheetPage() {
         });
 
     } catch (e: any) {
-        console.error(e);
-        setErrorDetails({ error: e.message, stderr: 'Client-side exception caught.' });
+        console.error('PDF_TOOL_INVOKE_FAIL', {
+            file: 'pdfsys/stamp_pdf.py',
+            fn: 'run',
+            cwd: process.cwd(),
+            err: String(e),
+            stack: e.stack,
+        });
+        setErrorDetails({ error: e.message, stderr: e.stack || 'Client-side exception caught.' });
         toast({
             title: 'Client Error',
             description: 'There was a problem preparing the PDF request. Please try again.',
