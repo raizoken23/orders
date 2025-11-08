@@ -1,6 +1,5 @@
 
 'use server';
-export const runtime = 'nodejs'; // Required: specify Node.js runtime for Python execution.
 
 /**
  * @fileOverview A flow that generates a PDF scope sheet by stamping form data onto a template using a Python script.
