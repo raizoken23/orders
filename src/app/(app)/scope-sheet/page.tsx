@@ -24,6 +24,8 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Save } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { useSearchParams } from 'next/navigation'
+import { useEffect } from 'react'
 
 const scopeSheetSchema = z.object({
   claimNumber: z.string().min(1, 'Claim number is required.'),
@@ -32,14 +34,12 @@ const scopeSheetSchema = z.object({
   clientEmail: z.string().email('Invalid email address.'),
   clientPhone: z.string().min(1, 'Phone number is required.'),
   propertyAddress: z.string().min(1, 'Property address is required.'),
-  propertyCity: z.string().min(1, 'City is required.'),
-  propertyState: z.string().min(1, 'State is required.'),
-  propertyZip: z.string().min(1, 'ZIP code is required.'),
   dateOfLoss: z.string().min(1, 'Date of loss is required.'),
 })
 
 export default function ScopeSheetPage() {
   const { toast } = useToast()
+  const searchParams = useSearchParams()
 
   const form = useForm<z.infer<typeof scopeSheetSchema>>({
     resolver: zodResolver(scopeSheetSchema),
@@ -50,12 +50,27 @@ export default function ScopeSheetPage() {
       clientEmail: '',
       clientPhone: '',
       propertyAddress: '',
-      propertyCity: '',
-      propertyState: '',
-      propertyZip: '',
       dateOfLoss: '',
     },
   })
+
+  useEffect(() => {
+    const claimNumber = searchParams.get('claimNumber')
+    const policyNumber = searchParams.get('policyNumber')
+    const clientName = searchParams.get('clientName')
+    const clientEmail = searchParams.get('clientEmail')
+    const clientPhone = searchParams.get('clientPhone')
+    const propertyAddress = searchParams.get('propertyAddress')
+    const dateOfLoss = searchParams.get('dateOfLoss')
+
+    if (claimNumber) form.setValue('claimNumber', claimNumber)
+    if (policyNumber) form.setValue('policyNumber', policyNumber)
+    if (clientName) form.setValue('clientName', clientName)
+    if (clientEmail) form.setValue('clientEmail', clientEmail)
+    if (clientPhone) form.setValue('clientPhone', clientPhone)
+    if (propertyAddress) form.setValue('propertyAddress', propertyAddress)
+    if (dateOfLoss) form.setValue('dateOfLoss', dateOfLoss.split('T')[0]) // Handle date format
+  }, [searchParams, form])
 
   function onSubmit(values: z.infer<typeof scopeSheetSchema>) {
     console.log(values)
@@ -219,47 +234,7 @@ export default function ScopeSheetPage() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="propertyCity"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>City</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Anytown" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="propertyState"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>State</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., CA" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="propertyZip"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>ZIP Code</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., 90210" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                
               </CardContent>
             </Card>
           </div>
