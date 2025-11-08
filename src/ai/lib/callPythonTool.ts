@@ -2,15 +2,7 @@
 
 import path from "node:path";
 import fs from "node:fs";
-import { z } from "zod";
 import { ai } from "@/ai/genkit-server";
-
-export const PdfResult = z.union([
-  z.object({ pdfBase64: z.string().min(20) }),
-  z.object({ error: z.object({
-    code: z.string(), message: z.string(), detail: z.string().optional().nullable()
-  }) })
-]);
 
 export async function callPythonTool(payload: any) {
   const root = process.cwd();
@@ -34,11 +26,6 @@ export async function callPythonTool(payload: any) {
   if (error) {
     throw error;
   }
-
-  const parsed = PdfResult.safeParse(output);
-  if (!parsed.success) {
-    console.error("PY_BAD_OUTPUT_ERROR", { error: parsed.error, received: output });
-    throw new Error(`PY_BAD_OUTPUT: Python script returned an invalid format.`);
-  }
-  return parsed.data;
+  
+  return output;
 }

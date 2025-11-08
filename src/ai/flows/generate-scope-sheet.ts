@@ -11,26 +11,41 @@ import { scopeSheetSchema } from '@/lib/schema/scope-sheet';
 import { callPythonTool } from '@/ai/lib/callPythonTool';
 import { trace } from "@opentelemetry/api";
 
+const PdfResultSchema = z.union([
+  z.object({ pdfBase64: z.string().min(20) }),
+  z.object({ error: z.object({
+    code: z.string(), message: z.string(), detail: z.string().optional().nullable()
+  }) })
+]);
+
+
 export async function generateScopeSheetPdf(data: z.infer<typeof scopeSheetSchema>) {
     return await trace.getTracer("pdf").startActiveSpan("pdf.generate", async (span) => {
         span.setAttribute("fn","run");
         try {
-            const result = await callPythonTool(data);
+            const output = await callPythonTool(data);
+            
+            // Validate the output from the Python tool
+            const result = PdfResultSchema.safeParse(output);
+            if (!result.success) {
+                console.error("PY_BAD_OUTPUT_ERROR", { error: result.error, received: output });
+                throw new Error(`PY_BAD_OUTPUT: Python script returned an invalid format.`);
+            }
 
-            if ('error' in result && result.error) {
-                console.error(`[generateScopeSheetPdf] Python script returned an error: ${result.error.message}`);
+            if ('error' in result.data && result.data.error) {
+                console.error(`[generateScopeSheetPdf] Python script returned an error: ${result.data.error.message}`);
                 span.setAttribute("result", "error");
-                span.recordException(new Error(result.error.message));
+                span.recordException(new Error(result.data.error.message));
 
                 return {
-                    error: result.error.message,
-                    stderr: result.error.detail || `Python script failed with code: ${result.error.code}.`,
+                    error: result.data.error.message,
+                    stderr: result.data.error.detail || `Python script failed with code: ${result.data.error.code}.`,
                     stdout: `Python script failed.`,
                 };
             }
             
             span.setAttribute("result","ok");
-            return result;
+            return result.data;
 
         } catch (e: any) {
              const errorDetails = {
