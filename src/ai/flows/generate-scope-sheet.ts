@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -12,6 +11,8 @@ import { scopeSheetSchema } from '@/lib/schema/scope-sheet';
 import { callPythonTool } from '@/ai/lib/callPythonTool';
 import { trace } from "@opentelemetry/api";
 
+export const runtime = 'nodejs'; // Required: specify Node.js runtime for Python execution.
+
 export async function generateScopeSheetPdf(data: z.infer<typeof scopeSheetSchema>) {
     return await trace.getTracer("pdf").startActiveSpan("pdf.generate", async (span) => {
         span.setAttribute("fn","run");
@@ -20,11 +21,9 @@ export async function generateScopeSheetPdf(data: z.infer<typeof scopeSheetSchem
 
             if ('error' in result && result.error) {
                 console.error(`[generateScopeSheetPdf] Python script returned an error: ${result.error.message}`);
-                console.error(`[generateScopeSheetPdf] Python Traceback: ${result.error.detail}`);
                 span.setAttribute("result", "error");
                 span.recordException(new Error(result.error.message));
 
-                // Re-shape the error to be consistent with other potential errors
                 return {
                     error: result.error.message,
                     stderr: result.error.detail || `Python script failed with code: ${result.error.code}.`,
@@ -36,21 +35,15 @@ export async function generateScopeSheetPdf(data: z.infer<typeof scopeSheetSchem
             return result;
 
         } catch (e: any) {
-            console.error('PDF_TOOL_INVOKE_FAIL', {
-                file: 'pdfsys/stamp_pdf.py',
-                fn: 'run',
-                cwd: process.cwd(),
-                err: String(e),
-                stack: e.stack,
-            });
-            span.recordException(e);
-            span.setAttribute("result","fail");
-             // Adapt the structured error for the frontend
-            return {
+             const errorDetails = {
                 error: e.message || 'An unexpected error occurred in the Genkit flow.',
                 stderr: e.stack || 'No stack trace available.',
                 stdout: 'The TypeScript flow failed before or after the Python script execution.',
             };
+            console.error('PDF_TOOL_INVOKE_FAIL', { ...errorDetails, cwd: process.cwd() });
+            span.recordException(e);
+            span.setAttribute("result","fail");
+            return errorDetails;
         } finally {
             span.end();
         }

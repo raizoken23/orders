@@ -162,7 +162,6 @@ export default function ScopeSheetPage() {
                 variant: 'destructive',
             });
             
-            // Kick off AI diagnosis
             setIsDiagnosing(true);
             try {
               const diagnosis = await diagnoseExecutionError({
@@ -182,7 +181,7 @@ export default function ScopeSheetPage() {
         }
 
         if (!result || !('pdfBase64' in result)) {
-             throw new Error("PDF base64 string is missing in the result.");
+             throw new Error("Client Error: PDF base64 string is missing in the result.");
         }
 
         const { pdfBase64 } = result;
@@ -207,17 +206,11 @@ export default function ScopeSheetPage() {
         });
 
     } catch (e: any) {
-        console.error('PDF_TOOL_INVOKE_FAIL', {
-            file: 'pdfsys/stamp_pdf.py',
-            fn: 'run',
-            cwd: process.cwd(),
-            err: String(e),
-            stack: e.stack,
-        });
+        console.error('PDF Generation Client Error:', e);
         setErrorDetails({ error: e.message, stderr: e.stack || 'Client-side exception caught.' });
         toast({
             title: 'Client Error',
-            description: 'There was a problem preparing the PDF request. Please try again.',
+            description: e.message || 'There was a problem preparing the PDF request.',
             variant: 'destructive',
         });
     } finally {
@@ -969,5 +962,3 @@ export default function ScopeSheetPage() {
     </Form>
   )
 }
-
-    

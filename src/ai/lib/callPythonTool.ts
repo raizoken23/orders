@@ -1,4 +1,3 @@
-
 import path from "node:path";
 import fs from "node:fs";
 import { z } from "zod";
@@ -17,13 +16,12 @@ export async function callPythonTool(payload: any) {
   const template = path.join(root, "public", "satellite_base.pdf");
   const coordsPath = path.join(root, "pdfsys", "coords.json.sample");
 
-  if (!fs.existsSync(file)) throw new Error("PY_FILE_NOT_FOUND: pdfsys/stamp_pdf.py missing");
-  if (!fs.existsSync(template)) throw new Error("TEMPLATE_NOT_FOUND: public/satellite_base.pdf missing");
-  if (!fs.existsSync(coordsPath)) throw new Error("COORDS_NOT_FOUND: pdfsys/coords.json.sample missing");
+  if (!fs.existsSync(file)) throw new Error(`PY_FILE_NOT_FOUND: ${file} missing`);
+  if (!fs.existsSync(template)) throw new Error(`TEMPLATE_NOT_FOUND: ${template} missing`);
+  if (!fs.existsSync(coordsPath)) throw new Error(`COORDS_NOT_FOUND: ${coordsPath} missing`);
 
   const coords = JSON.parse(fs.readFileSync(coordsPath, "utf8"));
 
-  // This is the critical fix: specifying `fn: "run"` tells Genkit which function to execute.
   const { output, error } = await ai.run({
     runtime: "python",
     file,
@@ -37,8 +35,8 @@ export async function callPythonTool(payload: any) {
 
   const parsed = PdfResult.safeParse(output);
   if (!parsed.success) {
-    console.error("PY_BAD_OUTPUT_ERROR", parsed.error);
-    throw new Error(`PY_BAD_OUTPUT: Python script returned an invalid format. Raw: ${JSON.stringify(output)}`);
+    console.error("PY_BAD_OUTPUT_ERROR", { error: parsed.error, received: output });
+    throw new Error(`PY_BAD_OUTPUT: Python script returned an invalid format.`);
   }
   return parsed.data;
 }
