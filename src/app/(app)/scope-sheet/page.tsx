@@ -153,7 +153,7 @@ export default function ScopeSheetPage() {
     try {
         const result = await generateScopeSheetPdf(values);
         
-        if ('error' in result && (result.error || (result.stderr && !result.pdfBase64))) {
+        if (result && 'error' in result && (result.error || (result.stderr && !result.pdfBase64))) {
             console.error('PDF Generation Failed:', result);
             setErrorDetails(result);
             toast({
@@ -181,10 +181,11 @@ export default function ScopeSheetPage() {
             return;
         }
 
-        const { pdfBase64 } = result as { pdfBase64: string };
-        if (!pdfBase64) {
-            throw new Error("PDF base64 string is missing in the result.");
+        if (!result || !('pdfBase64' in result)) {
+             throw new Error("PDF base64 string is missing in the result.");
         }
+
+        const { pdfBase64 } = result;
         const byteCharacters = atob(pdfBase64);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
