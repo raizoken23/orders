@@ -22,7 +22,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Download } from 'lucide-react'
+import { Download, FileText } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
@@ -52,8 +52,9 @@ const scopeSheetSchema = z.object({
   eaveLF: z.string().optional(),
   shingleType: z.string().optional(),
   otherShingle: z.string().optional(),
-  iceWaterShield: z.boolean().optional(),
-  dripEdge: z.boolean().optional(),
+  iceWaterShield: z.array(z.string()).optional(),
+  dripEdge: z.array(z.string()).optional(),
+  dripEdgeRadio: z.string().optional(),
   layers: z.string().optional(),
   pitch: z.string().optional(),
   valleyMetalLF: z.string().optional(),
@@ -112,6 +113,85 @@ const scopeSheetSchema = z.object({
   ridgeVentPlastic: z.string().optional(),
 })
 
+type ScopeSheetData = z.infer<typeof scopeSheetSchema>;
+
+const mockData: ScopeSheetData = {
+    claimNumber: 'DEMO-12345',
+    policyNumber: 'DEMO-67890',
+    clientName: 'John Appleseed',
+    clientEmail: 'j.appleseed@example.com',
+    clientPhone: '(555) 867-5309',
+    propertyAddress: '1234 Main St, Anytown, USA 12345',
+    dateOfLoss: '2025-11-08',
+    hailF: '10',
+    hailR: '8',
+    hailB: '12',
+    hailL: '9',
+    windDate: '2025-11-07',
+    ladderNow: true,
+    inspector: 'P Yarborough',
+    phone: '310-357-1399',
+    email: 'pyarborough@laddernow.com',
+    eaveLF: '150',
+    shingleType: 'Laminate',
+    otherShingle: 'Metal Accent',
+    iceWaterShield: ['Valley', 'Eave'],
+    dripEdgeRadio: 'Yes',
+    dripEdge: ['Eave', 'Rake'],
+    layers: '1',
+    pitch: '6/12',
+    valleyMetalLF: '40',
+    shingleMake: '30 Y',
+    calcA: '100',
+    calcB: '120',
+    calcC: 'N/A',
+    calcD: 'N/A',
+    calcE: 'N/A',
+    calcF: '150',
+    calcG: '130',
+    calcH: 'N/A',
+    calcI: 'N/A',
+    calcJ: 'N/A',
+    calcK: 'N/A',
+    calcL: 'N/A',
+    calcM: 'N/A',
+    rakeLF: '180',
+    totalSquares: '28',
+    aerialMeasurements1Story: '1500 sq ft',
+    aerialMeasurements2Story: '1300 sq ft',
+    boxVentsQtyPlastic: '4',
+    ridgeVentLF: '50',
+    turbineQtyLead: '2',
+    hvacVentQtyPlastic: '1',
+    pipesQtyPlastic: '3',
+    guttersLF: '150',
+    guttersSize: '5"',
+    downspoutsLF: '80',
+    downspoutsSize: '2x3',
+    fasciaMetal: '230 LF',
+    chimneyFlashing: 'Step',
+    notes: 'Heavy hail damage observed on all slopes. Minor wind damage on the west-facing slope. Inspected property with homeowner present. All collateral damage was documented. Homeowner has a dog named "Sparky".',
+    ridgeVentPlastic: '',
+    boxVentsQtyLead: '',
+    rainDiverterQtyLead: '',
+    rainDiverterQtyPlastic: '',
+    powerVentQtyLead: '',
+    powerVentQtyPlastic: '',
+    skylightQtyLead: '',
+    skylightQtyPlastic: '',
+    satQtyLead: '',
+    satQtyPlastic: '',
+    fasciaWood: '',
+    chimneyOther: '',
+    maxHailDiameter: '',
+    stormDirection: '',
+    collateralDamageF: '',
+    collateralDamageB: '',
+    collateralDamageR: '',
+    collateralDamageL: '',
+    yesNoEaveRake: '',
+};
+
 export default function ScopeSheetPage() {
   const { toast } = useToast()
   const searchParams = useSearchParams()
@@ -138,8 +218,9 @@ export default function ScopeSheetPage() {
       eaveLF: '',
       shingleType: '',
       otherShingle: '',
-      iceWaterShield: false,
-      dripEdge: false,
+      iceWaterShield: [],
+      dripEdge: [],
+      dripEdgeRadio: 'No',
       layers: '',
       pitch: '',
       valleyMetalLF: '',
@@ -200,14 +281,20 @@ export default function ScopeSheetPage() {
   })
 
   useEffect(() => {
-    searchParams.forEach((value, key) => {
-      if (key === 'ladderNow' || key === 'iceWaterShield' || key === 'dripEdge') {
-        form.setValue(key, value === 'true');
-      } else if (Object.keys(form.getValues()).includes(key)) {
-        form.setValue(key as any, value);
+    const params = new URLSearchParams(searchParams);
+    params.forEach((value, key) => {
+      if (Object.keys(form.getValues()).includes(key)) {
+          if (key === 'ladderNow' || key === 'iceWaterShield' || key === 'dripEdge') {
+             form.setValue(key as any, value === 'true');
+          } else if (key === 'iceWaterShield' || key === 'dripEdge') {
+             form.setValue(key as any, value.split(','));
+          } else {
+             form.setValue(key as any, value);
+          }
       }
     });
-  }, [searchParams, form])
+  }, [searchParams, form]);
+
 
   function onSubmit(values: z.infer<typeof scopeSheetSchema>) {
     const doc = new jsPDF({
@@ -219,348 +306,391 @@ export default function ScopeSheetPage() {
     const docWidth = doc.internal.pageSize.getWidth();
     const docHeight = doc.internal.pageSize.getHeight();
     const margin = 20;
-    const contentWidth = docWidth - margin * 2;
-  
+
     // Colors
-    const green = [226, 240, 217];
-    const yellow = [255, 242, 204];
-    const blue = [222, 235, 247];
-    const pink = [248, 203, 173];
-    const grey = [242, 242, 242];
-  
-    // Helper function for drawing text
+    const seeknowGreen = [105, 190, 70];
+    const lightGreen = [216, 228, 188];
+    const lightPink = [252, 213, 180];
+    const lightBlue = [218, 238, 243];
+    const darkGray = [89, 89, 89];
+    const black = [0, 0, 0];
+
+    // Helper to draw text
     const text = (
-      text: string,
-      x: number,
-      y: number,
-      options?: { align?: 'left' | 'center' | 'right'; color?: number[]; size?: number; font?: 'helvetica' | 'times' | 'courier'; style?: 'normal' | 'bold' | 'italic' }
+        txt: string, x: number, y: number, 
+        options: { 
+            align?: 'left' | 'center' | 'right', 
+            color?: number[], 
+            size?: number, 
+            style?: 'normal' | 'bold' | 'italic' | 'bolditalic'
+        } = {}
     ) => {
-      const { align = 'left', color = [0,0,0], size = 8, font = 'helvetica', style = 'normal' } = options || {};
-      
-      doc.setTextColor(color[0], color[1], color[2]);
+      const { align = 'left', color = black, size = 8, style = 'normal' } = options;
       doc.setFontSize(size);
-      doc.setFont(font, style);
-      
-      doc.text(text, x, y, { align });
-      
-      // Reset to defaults
-      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', style);
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text(txt, x, y, { align });
+      doc.setTextColor(0,0,0); // reset
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
     };
 
-    // Helper for drawing a filled rectangle with a label
-    const coloredBox = (x: number, y: number, w: number, h: number, color: number[], label: string) => {
-        doc.setFillColor(color[0], color[1], color[2]);
-        doc.rect(x, y, w, h, 'F');
-        text(label, x + 2, y + h / 2 + 3, { size: 8 });
+    // Helper for rectangles
+    const rect = (x: number, y: number, w: number, h: number, color?: number[], style: 'F' | 'S' | 'FD' = 'S') => {
+        if (color) doc.setFillColor(color[0], color[1], color[2]);
+        doc.rect(x, y, w, h, style);
     };
 
+    const drawCheckbox = (x: number, y: number, checked = false) => {
+        rect(x, y, 8, 8);
+        if(checked) {
+            text('✓', x + 1, y + 6.5, { size: 10, style: 'bold'});
+        }
+    };
+    
     // --- Header ---
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(47, 117, 181);
-    text('ScopeSheet Pro.', margin, margin + 20);
-    doc.setFontSize(10);
-    doc.setTextColor(0,0,0);
-    text('(866) 801-1258', margin, margin + 35);
+    // SeekNow Logo
+    doc.setLineWidth(2);
+    doc.setDrawColor(seeknowGreen[0], seeknowGreen[1], seeknowGreen[2]);
+    rect(margin + 5, margin + 5, 20, 20, undefined, 'S');
+    doc.setLineWidth(1.5);
+    doc.line(margin + 12, margin + 5, margin + 12, margin + 25);
+    doc.line(margin + 5, margin + 15, margin + 25, margin + 15);
+    doc.setLineWidth(1);
+    doc.setDrawColor(0,0,0);
+
+    text('SeekNow.', margin + 30, margin + 20, { size: 16, style: 'bold', color: seeknowGreen });
+    text('(866) 801-1258', margin + 5, margin + 45, { size: 9, color: darkGray });
 
 
-    // --- Top Right Info ---
-    let topRightX = docWidth - margin - 225;
-    let topRightY = margin;
-    let boxWidth = 35;
-    let boxHeight = 15;
-
-    // Damage Type Boxes
-    coloredBox(topRightX + 115, topRightY, boxWidth, boxHeight, pink, 'Hail');
-    coloredBox(topRightX + 115 + boxWidth + 2, topRightY, boxWidth, boxHeight, pink, 'Wind');
-    coloredBox(topRightX + 115 + (boxWidth+2)*2, topRightY, boxWidth, boxHeight, pink, 'Tree');
-
-    // Hail Table
-    const hailLabels = ['F:', 'R:', 'B:', 'L:'];
-    const hailValues = [values.hailF, values.hailR, values.hailB, values.hailL];
-    hailLabels.forEach((label, i) => {
-        let y = topRightY + boxHeight + 2 + i * (boxHeight + 2);
-        doc.rect(topRightX + 115, y, boxWidth, boxHeight);
-        text(label, topRightX + 117, y + boxHeight/2 + 3);
-        text(hailValues[i] || '', topRightX + 115 + boxWidth - 2, y + boxHeight/2 + 3, { align: 'right' });
-    });
+    // --- Right Header Info ---
+    let rhx = docWidth - margin - 250;
+    let rhy = margin;
+    const rh_field_h = 16;
     
-    // Wind Date
-    doc.rect(topRightX + 115 + boxWidth + 2, topRightY + boxHeight + 2, boxWidth*2 + 2, boxHeight);
-    text(`Date: ${values.windDate || ''}`, topRightX + 115 + boxWidth + 4, topRightY + boxHeight + 2 + boxHeight/2 + 3);
+    // Damage Type
+    rect(rhx, rhy, 40, rh_field_h, lightPink, 'F');
+    text('Hail', rhx + 20, rhy + rh_field_h / 2 + 3, {align: 'center'});
+    rect(rhx + 42, rhy, 40, rh_field_h, lightPink, 'F');
+    text('Wind', rhx + 62, rhy + rh_field_h / 2 + 3, {align: 'center'});
+    rect(rhx + 84, rhy, 40, rh_field_h, lightPink, 'F');
+    text('Tree', rhx + 104, rhy + rh_field_h / 2 + 3, {align: 'center'});
+    
+    // Hail F,R,B,L
+    let hailX = rhx;
+    let hailY = rhy + rh_field_h + 2;
+    ['F:', 'R:', 'B:', 'L:'].forEach((label, i) => {
+        rect(hailX, hailY + i * (rh_field_h + 2), 124, rh_field_h);
+        text(label, hailX + 5, hailY + i * (rh_field_h + 2) + 11);
+        text(values[`hail${label.charAt(0)}` as 'hailF'] || '', hailX + 30, hailY + i * (rh_field_h + 2) + 11);
+    });
 
-    // Main Info Box
-    const infoFields = [
-      { label: 'Ladder Now', value: values.ladderNow ? 'Yes' : 'No' },
-      { label: 'Inspector:', value: values.inspector },
-      { label: 'Phone:', value: values.phone },
-      { label: 'Email:', value: values.email },
+    // Date & Inspector info
+    let dateX = rhx + 128;
+    let dateY = rhy;
+    rect(dateX, dateY, 122, rh_field_h);
+    text(`Date: ${values.dateOfLoss || ''}`, dateX + 5, dateY + 11);
+
+    const inspectorInfo = [
+        {label: 'Ladder Now', value: values.ladderNow ? 'Yes' : 'No'},
+        {label: 'Inspector:', value: values.inspector},
+        {label: 'Phone:', value: values.phone},
+        {label: 'Email:', value: values.email}
     ];
-    let infoBoxX = topRightX - 120;
-    infoFields.forEach((field, i) => {
-      let y = topRightY + boxHeight + 2 + i * (boxHeight + 2);
-      doc.rect(infoBoxX, y, 113, boxHeight);
-      text(`${field.label} ${field.value || ''}`, infoBoxX + 2, y + boxHeight/2 + 3);
+    inspectorInfo.forEach((info, i) => {
+        let y = dateY + (i + 1) * (rh_field_h + 2);
+        rect(dateX, y, 122, rh_field_h);
+        text(`${info.label} ${info.value || ''}`, dateX + 5, y + 11);
     });
-    doc.rect(infoBoxX, topRightY, 227, boxHeight);
-    text(`Date: ${values.dateOfLoss}`, infoBoxX + 2, topRightY + boxHeight/2 + 3);
-    
 
     // --- Left Column ---
-    let yPos = margin + 60;
-    let xPos = margin;
-    let leftColWidth = 120;
+    let lcx = margin;
+    let lcy = margin + 65;
+    const lcw = 140;
+    const lch = 18;
 
     // Shingle Type
-    coloredBox(xPos, yPos, leftColWidth, boxHeight, green, 'Shingle Type');
-    yPos += boxHeight;
-    doc.rect(xPos, yPos, leftColWidth, boxHeight * 2);
-    text(`Eave: LF ${values.eaveLF || ''}`, xPos + 2, yPos + 10);
-    text(values.shingleType || '', xPos + 2, yPos + 25);
-    yPos += boxHeight * 2;
-    
-    // Other Shingle
-    coloredBox(xPos, yPos, leftColWidth, boxHeight, green, 'Other:');
-    doc.rect(xPos, yPos + boxHeight, leftColWidth, boxHeight);
-    text(values.otherShingle || '', xPos + 2, yPos + boxHeight + 10);
-    yPos += boxHeight * 2;
-    
-    // Ice/Water Shield
-    coloredBox(xPos, yPos, leftColWidth, boxHeight, green, 'Ice/Water Shield');
-    yPos += boxHeight;
-    doc.rect(xPos, yPos, leftColWidth, boxHeight);
-    text(`Valey Eave Rake`, xPos + 2, yPos + 10); // this is a static label
-    if (values.iceWaterShield) {
-        text('X', xPos + leftColWidth - 10, yPos + 10, {style: 'bold'});
-    }
-    yPos += boxHeight;
-    
-    // Drip Edge
-    coloredBox(xPos, yPos, leftColWidth, boxHeight, green, 'Drip Edge');
-    yPos += boxHeight;
-    doc.rect(xPos, yPos, leftColWidth, boxHeight);
-    text('Yes', xPos + 2, yPos + 10);
-    text('No', xPos + 32, yPos + 10);
-    text('Eave', xPos + 62, yPos + 10);
-    text('Rake', xPos + 92, yPos + 10);
-    if(values.dripEdge) text('X', xPos + 20, yPos + 10, {style: 'bold'});
-    else text('X', xPos + 50, yPos + 10, {style: 'bold'});
-    yPos += boxHeight;
+    rect(lcx, lcy, lcw, lch, lightGreen, 'F');
+    text('Shingle Type', lcx + 5, lcy + 12);
+    rect(lcx, lcy + lch, lcw, 46);
+    drawCheckbox(lcx + 5, lcy + lch + 5, values.shingleType === '3 Tab');
+    text('3 Tab', lcx + 18, lcy + lch + 12);
+    drawCheckbox(lcx + 5, lcy + lch + 20, values.shingleType === 'Laminate');
+    text('Laminate', lcx + 18, lcy + lch + 27);
 
-    // Layers
-    coloredBox(xPos, yPos, leftColWidth, boxHeight, green, 'Layers:');
-    doc.rect(xPos, yPos + boxHeight, leftColWidth, boxHeight);
-    text(values.layers || '', xPos + 2, yPos + boxHeight + 10);
-    yPos += boxHeight * 2;
-
-    // Pitch
-    coloredBox(xPos, yPos, leftColWidth, boxHeight, green, 'Pitch:');
-    doc.rect(xPos, yPos + boxHeight, leftColWidth, boxHeight);
-    text(values.pitch || '', xPos + 2, yPos + boxHeight + 10);
-    yPos += boxHeight * 2;
-    
-    // Valley Metal
-    coloredBox(xPos, yPos, leftColWidth, boxHeight, green, 'Valley Metal');
-    doc.rect(xPos, yPos + boxHeight, leftColWidth, boxHeight);
-    text(`LF ${values.valleyMetalLF || ''}`, xPos + 2, yPos + boxHeight + 10);
-    yPos += boxHeight * 2;
-
-    // Shingle Make
-    const shingleMakes = ['3 Tab 20 Y', '25 Y', '30 Y', '40 Y', '50 Y Laminate'];
+    const shingleMakes = ['20 Y', '25 Y', '30 Y', '40 Y', '50 Y'];
     shingleMakes.forEach((make, i) => {
-        doc.rect(xPos, yPos + i * boxHeight, leftColWidth, boxHeight);
-        text(make, xPos + 2, yPos + i * boxHeight + 10);
-        if (values.shingleMake === make) {
-            text('X', xPos + leftColWidth - 10, yPos + i * boxHeight + 10, {style: 'bold'});
+        let yPos = lcy + lch + 5 + (Math.floor(i/3) * 15)
+        let xPos = lcx + 70 + (i%3 * 22)
+        if(i >= 3) {
+            yPos = lcy + lch + 5 + (Math.floor(i/2) * 15)
+            xPos = lcx + 70 + (i%2 * 35)
         }
-    })
-    yPos += boxHeight * 5;
+        if(i === 1 || i === 4) xPos -= 5;
+        
+        drawCheckbox(xPos, yPos, values.shingleMake === make);
+        text(make, xPos + 10, yPos + 7);
+    });
 
-    // --- Middle Column (Accessories) ---
-    let middleX = xPos + leftColWidth + 5;
-    let middleY = margin + 60;
-    const accWidth = 140;
-    const accHeaderHeight = boxHeight * 2;
+    lcy += lch + 48;
+    // Other
+    rect(lcx, lcy, lcw, lch, lightGreen, 'F');
+    text('Other:', lcx+5, lcy + 12);
+    rect(lcx, lcy+lch, lcw, lch);
+    text(values.otherShingle || '', lcx + 5, lcy + lch + 12);
 
-    // Header
-    doc.setFillColor(yellow[0], yellow[1], yellow[2]);
-    doc.rect(middleX, middleY, accWidth, accHeaderHeight, 'F');
-    text('Qty Lead', middleX + 50, middleY + 12);
-    text('Qty Plastic', middleX + 95, middleY + 12);
-    text('Metal Damaged', middleX + 50, middleY + 28);
-    text('LF Plastic', middleX + 105, middleY + 28);
-    middleY += accHeaderHeight;
+    lcy += lch * 2 + 2;
+    // Ice/Water Shield
+    rect(lcx, lcy, lcw, lch, lightGreen, 'F');
+    text('Ice/Water Shield', lcx+5, lcy+12);
+    rect(lcx, lcy+lch, lcw, lch);
+    drawCheckbox(lcx + 5, lcy+lch+4, values.iceWaterShield?.includes('Valley'));
+    text('Valley', lcx + 18, lcy+lch+11);
+    drawCheckbox(lcx + 60, lcy+lch+4, values.iceWaterShield?.includes('Eave'));
+    text('Eave', lcx + 73, lcy+lch+11);
+    drawCheckbox(lcx + 105, lcy+lch+4, values.iceWaterShield?.includes('Rake'));
+    text('Rake', lcx + 118, lcy+lch+11);
+    
+    lcy += lch * 2 + 2;
+    // Drip Edge
+    rect(lcx, lcy, lcw, lch, lightGreen, 'F');
+    text('Drip Edge', lcx+5, lcy+12);
+    rect(lcx, lcy+lch, lcw, lch);
+    drawCheckbox(lcx + 5, lcy+lch+4, values.dripEdgeRadio === 'Yes');
+    text('Yes', lcx + 18, lcy+lch+11);
+    drawCheckbox(lcx + 45, lcy+lch+4, values.dripEdgeRadio === 'No');
+    text('No', lcx + 58, lcy+lch+11);
+    drawCheckbox(lcx + 85, lcy+lch+4, values.dripEdge?.includes('Eave'));
+    text('Eave', lcx + 98, lcy+lch+11);
+    drawCheckbox(lcx + 105, lcy+lch+4, values.dripEdge?.includes('Rake'));
+    // text('Rake', lcx + 118, lcy+lch+11);
 
+
+    lcy += lch * 2 + 2;
+    // Valley Metal
+    rect(lcx, lcy, lcw, lch, lightGreen, 'F');
+    text('Valley Metal', lcx+5, lcy+12);
+    rect(lcx, lcy+lch, lcw, lch);
+    text(values.valleyMetalLF ? `${values.valleyMetalLF} LF` : 'Na LF', lcx + 5, lcy + lch + 12);
+
+    lcy += lch * 2 + 2;
+    // Layers & Pitch
+    rect(lcx, lcy, lcw, lch, lightGreen, 'F');
+    text('Layers:', lcx+5, lcy+12);
+    text(values.layers || '', lcx + 45, lcy+12);
+    rect(lcx, lcy, lcw/2, lch);
+    text('Pitch:', lcx+lcw/2+5, lcy+12);
+    text(values.pitch || '', lcx + lcw/2 + 35, lcy+12);
+
+    // Accessories
+    lcy += lch + 2;
     const accessories = [
-        { name: 'Box Vents:', values: [values.boxVentsQtyLead, values.boxVentsQtyPlastic] },
-        { name: 'Ridge Vent:', values: [values.ridgeVentMetalDamaged, values.ridgeVentLF] },
-        { name: 'Turbine:', values: [values.turbineQtyLead, values.turbineQtyPlastic] },
-        { name: 'HVAC Vent:', values: [values.hvacVentQtyLead, values.hvacVentQtyPlastic] },
-        { name: 'Rain Diverter:', values: [values.rainDiverterQtyLead, values.rainDiverterQtyPlastic] },
-        { name: 'Power Vent:', values: [values.powerVentQtyLead, values.powerVentQtyPlastic] },
-        { name: 'Skylight:', values: [values.skylightQtyLead, values.skylightQtyPlastic] },
-        { name: 'SAT:', values: [values.satQtyLead, values.satQtyPlastic] },
-        { name: 'Pipes:', values: [values.pipesQtyLead, values.pipesQtyPlastic] },
+        {label: 'Box Vents:', plastic: values.boxVentsQtyPlastic, lead: values.boxVentsQtyLead},
+        {label: 'Ridge Vent:', plastic: values.ridgeVentPlastic, lead: values.ridgeVentLF},
+        {label: 'Turbine:', plastic: values.turbineQtyPlastic, lead: values.turbineQtyLead},
+        {label: 'HVAC Vent:', plastic: values.hvacVentQtyPlastic, lead: values.hvacVentQtyLead},
+        {label: 'Rain Diverter:', plastic: values.rainDiverterQtyPlastic, lead: values.rainDiverterQtyLead},
+        {label: 'Power Vent:', plastic: values.powerVentQtyPlastic, lead: values.powerVentQtyLead},
+        {label: 'Skylight:', plastic: values.skylightQtyPlastic, lead: values.skylightQtyLead},
+        {label: 'SAT:', plastic: values.satQtyPlastic, lead: values.satQtyLead},
     ];
-    accessories.forEach((acc, i) => {
-        let currentY = middleY + i * boxHeight;
-        coloredBox(middleX, currentY, 45, boxHeight, yellow, acc.name);
-        doc.rect(middleX + 45, currentY, 47, boxHeight);
-        doc.rect(middleX + 92, currentY, 48, boxHeight);
-        text(acc.values[0] || '', middleX + 90, currentY + 10, {align: 'right'});
-        text(acc.values[1] || '', middleX + 138, currentY + 10, {align: 'right'});
+
+    rect(lcx, lcy, lcw, 28);
+    rect(lcx, lcy, 55, 28);
+    rect(lcx+55, lcy, 42.5, 14);
+    rect(lcx+55, lcy+14, 42.5, 14);
+    text('Metal', lcx+76, lcy+11, {align: 'center'});
+    text('Damaged', lcx+76, lcy+23, {align: 'center'});
+    rect(lcx+97.5, lcy, 42.5, 14);
+    rect(lcx+97.5, lcy+14, 42.5, 14);
+    text('Plastic', lcx+118, lcy+11, {align: 'center'});
+    text('LF', lcx+118, lcy+23, {align: 'center'});
+    lcy += 28;
+
+    accessories.forEach(item => {
+        rect(lcx, lcy, lcw, lch, lightGreen, 'F');
+        rect(lcx, lcy, 55, lch);
+        text(item.label, lcx+5, lcy+12);
+        rect(lcx+55, lcy, 42.5, lch);
+        rect(lcx+97.5, lcy, 42.5, lch);
+        text(item.plastic || '', lcx+76, lcy+12, {align: 'center'});
+        text(item.lead || '', lcx+118, lcy+12, {align: 'center'});
+        lcy += lch;
     });
-    middleY += accessories.length * boxHeight;
 
-    // Gutters / Downspouts / Fascia
-    const gutterItems = [
-        {name: 'Gutters:', value: `LF ${values.guttersLF || ''}`, size: values.guttersSize, sizes: ['5"', '6"']},
-        {name: 'Downspouts:', value: `LF ${values.downspoutsLF || ''}`, size: values.downspoutsSize, sizes: ['2x3', '3x4']},
-    ]
-    gutterItems.forEach(item => {
-        coloredBox(middleX, middleY, accWidth, boxHeight, yellow, item.name);
-        doc.rect(middleX, middleY + boxHeight, accWidth, boxHeight);
-        text(item.value, middleX + 2, middleY + boxHeight + 10);
-        
-        let sizeX = middleX + accWidth - 50;
-        text(item.sizes[0], sizeX, middleY + 10);
-        if (item.size === item.sizes[0]) doc.rect(sizeX - 12, middleY + 2.5, 10,10, 'F');
-        else doc.rect(sizeX - 12, middleY + 2.5, 10,10);
-        
-        sizeX += 25;
-        text(item.sizes[1], sizeX, middleY + 10);
-        if (item.size === item.sizes[1]) doc.rect(sizeX - 12, middleY + 2.5, 10,10, 'F');
-        else doc.rect(sizeX - 12, middleY + 2.5, 10,10);
+    lcy += 2;
+    // Pipes
+    rect(lcx, lcy, lcw, lch, lightGreen, 'F');
+    text('Pipes:', lcx+5, lcy+12);
+    rect(lcx, lcy+lch, lcw, lch);
+    rect(lcx, lcy, 55, lch*2);
+    rect(lcx+55, lcy, 85, lch);
+    text('Qty', lcx+75, lcy+12);
+    text('Lead', lcx+115, lcy+12);
+    rect(lcx+55, lcy+lch, 42.5, lch);
+    text(values.pipesQtyLead || '', lcx+76, lcy+lch+12, {align:'center'});
+    rect(lcx+97.5, lcy+lch, 42.5, lch);
+    text(values.pipesQtyPlastic || '', lcx+118, lcy+lch+12, {align:'center'});
+    text('Qty', lcx+75, lcy+lch-6);
+    text('Plastic', lcx+115, lcy+lch-6);
 
-        middleY += boxHeight * 2;
-    })
+    lcy += lch*2 + 2;
+    // Gutters
+    rect(lcx, lcy, lcw, lch, lightGreen, 'F');
+    text('Gutters:', lcx+5, lcy+12);
+    rect(lcx, lcy+lch, lcw, lch);
+    text(values.guttersLF ? `NA LF` : 'NA LF', lcx+5, lcy+lch+12);
+    drawCheckbox(lcx+80, lcy+lch+4, values.guttersSize === '5"');
+    text('5"', lcx+90, lcy+lch+11);
+    drawCheckbox(lcx+110, lcy+lch+4, values.guttersSize === '6"');
+    text('6"', lcx+120, lcy+lch+11);
     
-    coloredBox(middleX, middleY, accWidth, boxHeight, yellow, 'Fascia:');
-    doc.rect(middleX, middleY + boxHeight, accWidth, boxHeight);
-    text(`Wood/Metal`, middleX + 2, middleY + boxHeight + 10);
-    text(`Size: ${values.fasciaMetal || ''}`, middleX + accWidth - 2, middleY + boxHeight + 10, {align: 'right'});
-    middleY += boxHeight * 2;
+    lcy += lch*2 + 2;
+    // Downspouts
+    rect(lcx, lcy, lcw, lch, lightGreen, 'F');
+    text('Downspouts:', lcx+5, lcy+12);
+    rect(lcx, lcy+lch, lcw, lch);
+    drawCheckbox(lcx+80, lcy+lch+4, values.downspoutsSize === '2x3');
+    text('2x3', lcx+90, lcy+lch+11);
+    drawCheckbox(lcx+110, lcy+lch+4, values.downspoutsSize === '3x4');
+    text('3x4', lcx+120, lcy+lch+11);
+
+    lcy += lch*2 + 2;
+    // Fascia
+    rect(lcx, lcy, lcw, lch, lightGreen, 'F');
+    text('Fascia:', lcx+5, lcy+12);
+    rect(lcx, lcy+lch, lcw, lch);
+    text('Size', lcx+5, lcy+lch+12);
+    text('LF', lcx + 50, lcy+lch+12);
+    text('NA', lcx+90, lcy+lch+12);
+
+    lcy += lch*2 + 2;
+    // Wood/Metal
+    rect(lcx, lcy, lcw, lch, lightGreen, 'F');
+    text('Wood / Metal', lcx+5, lcy+12);
+    lcy += lch;
+    rect(lcx, lcy, lcw, lch);
+
+    lcy += lch + 2;
+    // Chimney Flashing & Other
+    const bottomFields = ['Chimney Flashing:', 'Other:', 'Solar', 'Vent E', 'Exhaust Vent'];
+    bottomFields.forEach(label => {
+        rect(lcx, lcy, lcw, lch, lightGreen, 'F');
+        text(label, lcx+5, lcy+12);
+        lcy += lch;
+        rect(lcx, lcy, lcw, lch);
+        lcy += lch;
+    });
+
+    // --- Middle Section ---
+    let mcx = lcx + lcw + 5;
+    let mcy = margin + 95;
+    const headerHeight = 15;
     
-    coloredBox(middleX, middleY, accWidth, boxHeight, yellow, 'Chimney Flashing:');
-    doc.rect(middleX, middleY + boxHeight, accWidth, boxHeight);
-    text(values.chimneyFlashing || '', middleX + 2, middleY + boxHeight + 10);
-    middleY += boxHeight * 2;
-
-    coloredBox(middleX, middleY, accWidth, boxHeight, yellow, 'Other:');
-    doc.rect(middleX, middleY + boxHeight, accWidth, boxHeight);
-    text(values.chimneyOther || '', middleX + 2, middleY + boxHeight + 10);
-    middleY += boxHeight * 2;
-
-
-    // --- Right Section ---
-    let rightX = middleX + accWidth + 5;
-    let rightY = margin + 60;
+    // Eave, Rake, Aerial
+    rect(mcx, mcy, 120, headerHeight);
+    text('Eave: LF N/A', mcx + 5, mcy + 11);
+    rect(mcx + 122, mcy, 120, headerHeight);
+    text('Rake: LF N/A', mcx + 127, mcy + 11);
+    rect(mcx + 244, mcy, 200, headerHeight);
+    text('Aerial Measurements:', mcx + 249, mcy + 11);
     
-    // Calculations & Total Squares
-    let calcWidth = 140;
-    let calcHeight = 120;
-    doc.rect(rightX, rightY, calcWidth, calcHeight);
-    text('Calculations:', rightX + 5, rightY + 10, { style: 'bold' });
-    const calcs = ['A', 'B', 'C', 'D', 'E'];
-    const calcs2 = ['F', 'G', 'H', 'I', 'J'];
-    const calcs3 = ['K', 'L', 'M'];
-    const calcValues = {...values};
-    calcs.forEach((c, i) => { text(`${c} ${calcValues[`calc${c}`] || ''}`, rightX + 5, rightY + 25 + i * 15); });
-    calcs2.forEach((c, i) => { text(`${c} ${calcValues[`calc${c}`] || ''}`, rightX + 45, rightY + 25 + i * 15); });
-    calcs3.forEach((c, i) => { text(`${c} ${calcValues[`calc${c}`] || ''}`, rightX + 85, rightY + 25 + i * 15); });
+    mcy += headerHeight;
+    // Calculations
+    rect(mcx, mcy, 120, 90);
+    text('Calculations:', mcx + 5, mcy + 12);
+    ['A', 'B', 'C', 'D', 'E'].forEach((l,i) => text(`${l} N/A`, mcx + 5, mcy + 28 + i*13));
+    rect(mcx+122, mcy, 120, 90);
+    ['F', 'G', 'H', 'I', 'J'].forEach((l,i) => text(`${l} N/A`, mcx + 127, mcy + 13 + i*15));
+    
+    // Aerial Measurements
+    rect(mcx+244, mcy, 200, 90);
+    ['K', 'L', 'M'].forEach((l,i) => text(`${l} N/A`, mcx + 249, mcy + 13 + i*15));
+    text('1 Story:', mcx+320, mcy+13);
+    text('2 Story:', mcx+320, mcy+28);
 
-    doc.rect(rightX, rightY + calcHeight + 2, calcWidth, boxHeight*2);
-    text('Total Squares:', rightX + 5, rightY + calcHeight + 2 + 12, {style: 'bold'});
-    text(values.totalSquares || '', rightX + calcWidth - 5, rightY + calcHeight + 2 + 22, {align: 'right'});
+    mcy += 90;
+    // Total Squares
+    rect(mcx, mcy, 242, 20);
+    text('Total Squares:', mcx+5, mcy+14);
 
-    // Rake / Aerial
-    doc.rect(rightX, rightY + calcHeight + 2 + boxHeight*2 + 2, calcWidth, boxHeight*3);
-    text(`Rake: LF ${values.rakeLF || ''}`, rightX + 5, rightY + calcHeight + 2 + boxHeight*2 + 2 + 12);
-    text(`Aerial Measurements:`, rightX + 5, rightY + calcHeight + 2 + boxHeight*2 + 2 + 27);
-    text(`1 Story: ${values.aerialMeasurements1Story || ''}`, rightX + 15, rightY + calcHeight + 2 + boxHeight*2 + 2 + 42);
-    text(`2 Story: ${values.aerialMeasurements2Story || ''}`, rightX + 75, rightY + calcHeight + 2 + boxHeight*2 + 2 + 42);
+    mcy += 22;
+    // Key
+    rect(mcx, mcy, 310, 55, lightBlue, 'F');
+    doc.setFont('helvetica', 'bold');
+    text('Key:', mcx+5, mcy+12);
+    doc.setFont('helvetica', 'normal');
 
-    let keyX = rightX + calcWidth + 5;
-    // Key Box
-    doc.setFillColor(blue[0], blue[1], blue[2]);
-    doc.rect(keyX, rightY, 150, 100, 'F');
-    text('Key:', keyX + 5, rightY+10, {style: 'bold'});
     const keyItems = [
-      'TC = Thermal Cracking', 'TD = Tree Damage',
-      'TS = Test Square', 'B = Blistering',
-      'X = Wind Damage', 'M = Mechanical Damage',
-      '☐ = Box Vent', 'PV = Power Vent',
-      '⚫ = Pipe Boot', '☑ = HVAC',
-      'E = Exhaust Vent', 'Solar Vent E',
-      '= Chimney'
+        {t: 'TS = Test Square', x: mcx+30, y: mcy+12},
+        {t: 'B = Blistering', x: mcx+120, y: mcy+12},
+        {t: 'M = Mechanical Damage', x: mcx+200, y: mcy+12},
+        {t: 'TC = Thermal Cracking', x: mcx+30, y: mcy+26},
+        {t: 'PV = Power Vent', x: mcx+120, y: mcy+26},
+        {t: 'TD = Tree Damage', x: mcx+200, y: mcy+26},
     ];
-    keyItems.forEach((item, i) => {
-      text(item, keyX + 5 + (Math.floor(i/7) * 75), rightY + 22 + (i % 7) * 11, {size: 7});
-    });
-
-    // Inch to Decimal
-    const decimalTableX = keyX + 150 + 5;
-    doc.setFillColor(grey[0], grey[1], grey[2]);
-    doc.rect(decimalTableX, rightY, 100, 100, 'F');
-    const inches = [1,2,3,4,5,6];
-    const decimals = ['.08', '.17', '.25', '.33', '.42', '.50'];
-    const inches2 = [7,8,9,10,11,12];
-    const decimals2 = ['.58', '.67', '.75', '.83', '.92', '1.00'];
-    text('Inch to Decimal', decimalTableX + 5, rightY + 10, {style: 'bold'});
-    inches.forEach((inch, i) => {
-      text(`${inch}" = ${decimals[i]}`, decimalTableX + 5, rightY + 22 + i * 11, {size: 8});
-    });
-     inches2.forEach((inch, i) => {
-      text(`${inch}" = ${decimals2[i]}`, decimalTableX + 55, rightY + 22 + i * 11, {size: 8});
-    });
+    keyItems.forEach(item => text(item.t, item.x, item.y, {size: 7}));
     
-    // Notes section
-    let notesY = rightY + Math.max(100, calcHeight + 2 + boxHeight*2 + 2 + boxHeight*3) + 5;
-    let notesX = rightX;
-    let notesWidth = docWidth - margin - notesX;
-    let notesHeight = 150;
-    doc.rect(notesX, notesY, notesWidth, notesHeight);
-    text('Notes:', notesX + 5, notesY + 12);
-    doc.rect(notesX, notesY, notesWidth, boxHeight);
-    const splitNotes = doc.splitTextToSize(values.notes || '', notesWidth - 10);
-    text(splitNotes, notesX + 5, notesY + boxHeight + 10, {size: 9});
+    // Key Symbols
+    drawCheckbox(mcx+30, mcy+35);
+    text('= Box Vent', mcx+40, mcy+42, {size:7});
+    doc.setFillColor(0,0,0);
+    doc.circle(mcx+124, mcy+38.5, 4, 'F');
+    text('= HVAC', mcx+132, mcy+42, {size:7});
+    drawCheckbox(mcx+200, mcy+35); // Placeholder for chimney
+    text('= Chimney', mcx+210, mcy+42, {size:7});
+    text('X = Wind Damage', mcx+30, mcy+52, {size:7});
+    doc.circle(mcx+124, mcy+50, 4, 'S');
+    text('= Pipe Boot', mcx+132, mcy+52, {size:7});
+    text('E = Exhaust vent', mcx+200, mcy+52, {size:7});
 
-    // Storm Info
-    let stormY = notesY + notesHeight + 5;
-    doc.rect(notesX, stormY, notesWidth, 60);
-    text(`Max Hail Diameter: ${values.maxHailDiameter || ''}`, notesX + 5, stormY + 12);
-    text(`Storm Direction: ${values.stormDirection || ''}`, notesX + 5, stormY + 27);
-    text(`Collateral Damage:`, notesX + 5, stormY + 42);
-    text(`F: ${values.collateralDamageF || ''}`, notesX + 100, stormY + 42);
-    text(`B: ${values.collateralDamageB || ''}`, notesX + 150, stormY + 42);
-    text(`R: ${values.collateralDamageR || ''}`, notesX + 200, stormY + 42);
-    text(`L: ${values.collateralDamageL || ''}`, notesX + 250, stormY + 42);
 
-    // Main Grid Area
-    const gridX = leftColWidth + margin + 5;
-    const gridY = docHeight - margin - 220;
-    const gridWidth = docWidth - gridX - margin - (notesWidth/2.5) ;
-    const gridHeight = 220;
+    // Inch to Decimal Table
+    let tblX = mcx+315;
+    let tblY = mcy;
+    rect(tblX, tblY, 130, 55);
+    const inchData = [
+        ['1" .08', '5" .42', '9" .75'],
+        ['2" .17', '6" .50', '10" .83'],
+        ['3" .25', '7" .58', '11" .92'],
+        ['4" .33', '8" .67', '12" 1.00'],
+    ];
+    inchData.forEach((row, i) => {
+        row.forEach((cell, j) => {
+            text(cell, tblX + 5 + j*45, tblY + 12 + i*11, {size: 7})
+        })
+    })
+
+    // Grid Area
+    let gridX = mcx;
+    let gridY = mcy + 60;
+    let gridW = docWidth - gridX - margin;
+    let gridH = docHeight - gridY - margin;
     doc.setDrawColor(200);
     doc.setLineWidth(0.5);
-    for (let i = 0; i <= (gridWidth / 10); i++) {
-        doc.line(gridX + i * 10, gridY, gridX + i * 10, gridY + gridHeight);
+    for (let i = 0; i <= (gridW / 10); i++) {
+        doc.line(gridX + i * 10, gridY, gridX + i * 10, gridY + gridH);
     }
-    for (let i = 0; i <= (gridHeight / 10); i++) {
-        doc.line(gridX, gridY + i * 10, gridX + gridWidth, gridY + i * 10);
+    for (let i = 0; i <= (gridH / 10); i++) {
+        doc.line(gridX, gridY + i * 10, gridX + gridW, gridY + i * 10);
     }
     doc.setDrawColor(0);
     doc.setLineWidth(1);
-    doc.rect(gridX, gridY, gridWidth, gridHeight);
-    
-    doc.save(`ScopeSheet-${values.claimNumber}.pdf`);
+    doc.rect(gridX, gridY, gridW, gridH);
+
+    doc.save(`ScopeSheet-${values.claimNumber || 'DEMO'}.pdf`);
 
     toast({
       title: 'Report Generated',
       description: 'Your PDF report has been downloaded.',
     })
+  }
+
+  const handleTestReport = () => {
+    form.reset(mockData);
+    // Use a timeout to ensure the form state has been updated before submitting
+    setTimeout(() => {
+        form.handleSubmit(onSubmit)();
+    }, 100);
   }
 
   return (
@@ -575,10 +705,16 @@ export default function ScopeSheetPage() {
               Fill out the details for the new inspection.
             </p>
           </div>
-          <Button type="submit">
-            <Download className="mr-2" />
-            Download Report
-          </Button>
+          <div className='flex gap-2'>
+             <Button type="button" onClick={handleTestReport} variant="outline">
+                <FileText className="mr-2" />
+                Test Report
+            </Button>
+            <Button type="submit">
+                <Download className="mr-2" />
+                Download Report
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -809,7 +945,7 @@ export default function ScopeSheetPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
               <FormField
                 control={form.control}
                 name="eaveLF"
@@ -822,15 +958,54 @@ export default function ScopeSheetPage() {
                   </FormItem>
                 )}
               />
-              <FormField
+               <FormField
                 control={form.control}
                 name="shingleType"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Shingle Type</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                     <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-col space-y-1 pt-2"
+                    >
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="3 Tab" />
+                        </FormControl>
+                        <FormLabel className="font-normal">3 Tab</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="Laminate" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Laminate</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="shingleMake"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Shingle Make</FormLabel>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-wrap gap-x-4 gap-y-1 pt-2"
+                    >
+                      {['20 Y', '25 Y', '30 Y', '40 Y', '50 Y'].map(make => (
+                         <FormItem key={make} className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                            <RadioGroupItem value={make} />
+                            </FormControl>
+                            <FormLabel className="font-normal">{make}</FormLabel>
+                        </FormItem>
+                      ))}
+                    </RadioGroup>
                   </FormItem>
                 )}
               />
@@ -846,38 +1021,119 @@ export default function ScopeSheetPage() {
                   </FormItem>
                 )}
               />
-              <div className="flex items-center gap-8 pt-6">
-                <FormField
-                  control={form.control}
-                  name="iceWaterShield"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center space-x-2">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel>Ice/Water Shield</FormLabel>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="dripEdge"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center space-x-2">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel>Drip Edge</FormLabel>
-                    </FormItem>
-                  )}
-                />
-              </div>
+             
+              <FormField
+                control={form.control}
+                name="iceWaterShield"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ice/Water Shield</FormLabel>
+                    {['Valley', 'Eave', 'Rake'].map((item) => (
+                      <FormField
+                        key={item}
+                        control={form.control}
+                        name="iceWaterShield"
+                        render={({ field }) => {
+                          return (
+                            <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(item)}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([...(field.value || []), item])
+                                      : field.onChange(
+                                          field.value?.filter(
+                                            (value) => value !== item
+                                          )
+                                        )
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                {item}
+                              </FormLabel>
+                            </FormItem>
+                          )
+                        }}
+                      />
+                    ))}
+                  </FormItem>
+                )}
+              />
+                <div>
+                     <FormField
+                        control={form.control}
+                        name="dripEdgeRadio"
+                        render={({ field }) => (
+                        <FormItem className="space-y-3">
+                            <FormLabel>Drip Edge</FormLabel>
+                            <FormControl>
+                            <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="flex items-center space-x-2"
+                            >
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                    <RadioGroupItem value="Yes" />
+                                </FormControl>
+                                <FormLabel className="font-normal">Yes</FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                <FormControl>
+                                    <RadioGroupItem value="No" />
+                                </FormControl>
+                                <FormLabel className="font-normal">No</FormLabel>
+                                </FormItem>
+                            </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="dripEdge"
+                        render={() => (
+                        <FormItem className="mt-2">
+                            {['Eave', 'Rake'].map((item) => (
+                            <FormField
+                                key={item}
+                                control={form.control}
+                                name="dripEdge"
+                                render={({ field }) => {
+                                return (
+                                    <FormItem
+                                    key={item}
+                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                    >
+                                    <FormControl>
+                                        <Checkbox
+                                        checked={field.value?.includes(item)}
+                                        onCheckedChange={(checked) => {
+                                            return checked
+                                            ? field.onChange([...(field.value || []), item])
+                                            : field.onChange(
+                                                field.value?.filter(
+                                                (value) => value !== item
+                                                )
+                                            )
+                                        }}
+                                        />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">
+                                        {item}
+                                    </FormLabel>
+                                    </FormItem>
+                                )
+                                }}
+                            />
+                            ))}
+                        </FormItem>
+                        )}
+                    />
+                </div>
             </div>
             <Separator />
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -914,51 +1170,6 @@ export default function ScopeSheetPage() {
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="shingleMake"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Shingle Make</FormLabel>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col space-y-1"
-                    >
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="3 Tab 20 Y" />
-                        </FormControl>
-                        <FormLabel className="font-normal">3 Tab 20 Y</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="25 Y" />
-                        </FormControl>
-                        <FormLabel className="font-normal">25 Y</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="30 Y" />
-                        </FormControl>
-                        <FormLabel className="font-normal">30 Y</FormLabel>
-                      </FormItem>
-                       <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="40 Y" />
-                        </FormControl>
-                        <FormLabel className="font-normal">40 Y</FormLabel>
-                      </FormItem>
-                       <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="50 Y Laminate" />
-                        </FormControl>
-                        <FormLabel className="font-normal">50 Y Laminate</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
                   </FormItem>
                 )}
               />
@@ -1048,33 +1259,6 @@ export default function ScopeSheetPage() {
                             />
                          </div>
                     </div>
-                     <FormField
-                        control={form.control}
-                        name="yesNoEaveRake"
-                        render={({ field }) => (
-                           <FormItem>
-                            <FormLabel>Eave Rake</FormLabel>
-                                <RadioGroup
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                                className="flex items-center space-x-4"
-                                >
-                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                    <FormControl>
-                                    <RadioGroupItem value="yes" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal">Yes</FormLabel>
-                                </FormItem>
-                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                    <FormControl>
-                                    <RadioGroupItem value="no" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal">No</FormLabel>
-                                </FormItem>
-                                </RadioGroup>
-                            </FormItem>
-                        )}
-                    />
                 </CardContent>
             </Card>
         </div>
@@ -1092,8 +1276,8 @@ export default function ScopeSheetPage() {
                             <FormLabel className="text-center">Qty Lead</FormLabel>
                             <FormLabel className="text-center">Qty Plastic</FormLabel>
                         </div>
-                        {['Turbine', 'HVAC Vent', 'Rain Diverter', 'Power Vent', 'Skylight', 'SAT', 'Pipes'].map(item => {
-                            const name = item.toLowerCase().replace(' ', '') as 'turbine' | 'hvacvent' | 'raindiverter' | 'powervent' | 'skylight' | 'sat' | 'pipes';
+                        {['Box Vents', 'Turbine', 'HVAC Vent', 'Rain Diverter', 'Power Vent', 'Skylight', 'SAT', 'Pipes'].map(item => {
+                            const name = item.toLowerCase().replace(' ', '') as 'boxvents' | 'turbine' | 'hvacvent' | 'raindiverter' | 'powervent' | 'skylight' | 'sat' | 'pipes';
                             return (
                                 <div key={item} className="grid grid-cols-3 gap-2 items-center mb-2">
                                      <FormLabel>{item}</FormLabel>
@@ -1116,17 +1300,81 @@ export default function ScopeSheetPage() {
                         })}
                     </div>
                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-2 items-end">
+                            <FormField control={form.control} name="ridgeVentLF" render={({ field }) => (
+                                <FormItem><FormLabel>Ridge Vent LF</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="ridgeVentPlastic" render={({ field }) => (
+                                <FormItem className="flex items-center space-x-2"><FormControl><Checkbox checked={!!field.value} onCheckedChange={field.onChange}/></FormControl><FormLabel>Plastic</FormLabel></FormItem>
+                            )}/>
+                        </div>
+                         <FormField control={form.control} name="ridgeVentMetalDamaged" render={({ field }) => (
+                            <FormItem className="flex items-center space-x-2"><FormControl><Checkbox checked={!!field.value} onCheckedChange={field.onChange}/></FormControl><FormLabel>Metal Damaged</FormLabel></FormItem>
+                        )}/>
+
+                        <Separator/>
+                        
                         <FormField control={form.control} name="guttersLF" render={({ field }) => (
                             <FormItem><FormLabel>Gutters LF</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
                         )}/>
-                        <FormField control={form.control} name="guttersSize" render={({ field }) => (
-                            <FormItem><FormLabel>Gutters Size</FormLabel><FormControl><Input placeholder='5" or 6"' {...field} /></FormControl></FormItem>
+                        <FormField
+                            control={form.control}
+                            name="guttersSize"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Gutters Size</FormLabel>
+                                <FormControl>
+                                <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex space-x-4"
+                                >
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                        <RadioGroupItem value='5"' />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">5"</FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                        <RadioGroupItem value='6"' />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">6"</FormLabel>
+                                    </FormItem>
+                                </RadioGroup>
+                                </FormControl>
+                            </FormItem>
                         )}/>
                         <FormField control={form.control} name="downspoutsLF" render={({ field }) => (
                             <FormItem><FormLabel>Downspouts LF</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
                         )}/>
-                        <FormField control={form.control} name="downspoutsSize" render={({ field }) => (
-                            <FormItem><FormLabel>Downspouts Size</FormLabel><FormControl><Input placeholder='2x3 or 3x4' {...field} /></FormControl></FormItem>
+                        <FormField
+                            control={form.control}
+                            name="downspoutsSize"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Downspouts Size</FormLabel>
+                                <FormControl>
+                                <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex space-x-4"
+                                >
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                        <RadioGroupItem value='2x3' />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">2x3</FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                        <RadioGroupItem value='3x4' />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">3x4</FormLabel>
+                                    </FormItem>
+                                </RadioGroup>
+                                </FormControl>
+                            </FormItem>
                         )}/>
                      </div>
                      <div className="space-y-4">
@@ -1140,32 +1388,6 @@ export default function ScopeSheetPage() {
                             <FormItem><FormLabel>Other</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
                         )}/>
                      </div>
-                 </div>
-                 <Separator className="my-6" />
-                 <div className="grid md:grid-cols-3 gap-6">
-                    <FormField control={form.control} name="maxHailDiameter" render={({ field }) => (
-                        <FormItem><FormLabel>Max Hail Diameter</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                    )}/>
-                    <FormField control={form.control} name="stormDirection" render={({ field }) => (
-                        <FormItem><FormLabel>Storm Direction</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                    )}/>
-                    <div className="space-y-2">
-                        <FormLabel>Collateral Damage</FormLabel>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                             <FormField control={form.control} name="collateralDamageF" render={({ field }) => (
-                                <FormItem className="flex items-center gap-2"><FormLabel className="w-4">F:</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="collateralDamageB" render={({ field }) => (
-                                <FormItem className="flex items-center gap-2"><FormLabel className="w-4">B:</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="collateralDamageR" render={({ field }) => (
-                                <FormItem className="flex items-center gap-2"><FormLabel className="w-4">R:</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                            )}/>
-                            <FormField control={form.control} name="collateralDamageL" render={({ field }) => (
-                                <FormItem className="flex items-center gap-2"><FormLabel className="w-4">L:</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                            )}/>
-                        </div>
-                    </div>
                  </div>
             </CardContent>
         </Card>
@@ -1191,23 +1413,27 @@ export default function ScopeSheetPage() {
                     <Card>
                         <CardHeader><CardTitle className="text-lg">Key</CardTitle></CardHeader>
                         <CardContent className="text-sm space-y-1 text-muted-foreground">
-                            <p>TC = Thermal Cracking</p>
-                            <p>TD = Tree Damage</p>
                             <p>TS = Test Square</p>
                             <p>B = Blistering</p>
-                            <p>X = Wind Damage</p>
                             <p>M = Mechanical Damage</p>
+                            <p>TC = Thermal Cracking</p>
+                            <p>PV = Power Vent</p>
+                            <p>TD = Tree Damage</p>
+                            <p>☐ = Box Vent</p>
+                            <p>⚫ = HVAC</p>
+                            <p>☑ = Chimney</p>
+                            <p>X = Wind Damage</p>
+                            <p>⚪ = Pipe Boot</p>
+                            <p>E = Exhaust vent</p>
                         </CardContent>
                     </Card>
                      <Card>
                         <CardHeader><CardTitle className="text-lg">Inch to Decimal</CardTitle></CardHeader>
                         <CardContent className="text-sm space-y-1 text-muted-foreground grid grid-cols-2">
-                            <p>1” = .08</p><p>7” = .58</p>
-                            <p>2” = .17</p><p>8” = .67</p>
-                            <p>3” = .25</p><p>9” = .75</p>
-                            <p>4” = .33</p><p>10” = .83</p>
-                            <p>5” = .42</p><p>11” = .92</p>
-                            <p>6” = .50</p><p>12” = 1.00</p>
+                            <p>1” = .08</p><p>5” = .42</p><p>9” = .75</p>
+                            <p>2” = .17</p><p>6” = .50</p><p>10” = .83</p>
+                            <p>3” = .25</p><p>7” = .58</p><p>11” = .92</p>
+                            <p>4” = .33</p><p>8” = .67</p><p>12” = 1.00</p>
                         </CardContent>
                     </Card>
                 </div>
