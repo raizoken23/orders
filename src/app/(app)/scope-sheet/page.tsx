@@ -22,13 +22,15 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Save } from 'lucide-react'
+import { Download } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import jsPDF from 'jspdf'
+import 'jspdf-autotable'
 
 const scopeSheetSchema = z.object({
   claimNumber: z.string().min(1, 'Claim number is required.'),
@@ -66,7 +68,7 @@ const scopeSheetSchema = z.object({
   calcH: z.string().optional(),
   calcK: z.string().optional(),
   calcL: z.string().optional(),
-  calcM: z.string().optional(),
+  calcM: z_string().optional(),
   calcI: z.string().optional(),
   calcJ: z.string().optional(),
   rakeLF: z.string().optional(),
@@ -76,7 +78,7 @@ const scopeSheetSchema = z.object({
   yesNoEaveRake: z.string().optional(),
   turbineQtyLead: z.string().optional(),
   turbineQtyPlastic: z.string().optional(),
-  hvacVentQtyLead: z.string().optional(),
+hvacVentQtyLead: z.string().optional(),
   hvacVentQtyPlastic: z.string().optional(),
   rainDiverterQtyLead: z.string().optional(),
   rainDiverterQtyPlastic: z.string().optional(),
@@ -131,28 +133,100 @@ export default function ScopeSheetPage() {
   })
 
   useEffect(() => {
-    const claimNumber = searchParams.get('claimNumber')
-    const policyNumber = searchParams.get('policyNumber')
-    const clientName = searchParams.get('clientName')
-    const clientEmail = searchParams.get('clientEmail')
-    const clientPhone = searchParams.get('clientPhone')
-    const propertyAddress = searchParams.get('propertyAddress')
-    const dateOfLoss = searchParams.get('dateOfLoss')
-
-    if (claimNumber) form.setValue('claimNumber', claimNumber)
-    if (policyNumber) form.setValue('policyNumber', policyNumber)
-    if (clientName) form.setValue('clientName', clientName)
-    if (clientEmail) form.setValue('clientEmail', clientEmail)
-    if (clientPhone) form.setValue('clientPhone', clientPhone)
-    if (propertyAddress) form.setValue('propertyAddress', propertyAddress)
-    if (dateOfLoss) form.setValue('dateOfLoss', dateOfLoss.split('T')[0]) // Handle date format
+    searchParams.forEach((value, key) => {
+      if (key === 'ladderNow' || key === 'iceWaterShield' || key === 'dripEdge') {
+        form.setValue(key, value === 'true');
+      } else if (Object.keys(form.getValues()).includes(key)) {
+        form.setValue(key as any, value);
+      }
+    });
   }, [searchParams, form])
 
   function onSubmit(values: z.infer<typeof scopeSheetSchema>) {
-    console.log(values)
+    const doc = new jsPDF();
+    
+    // Add header
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ScopeSheet Pro - Inspection Report', 105, 20, { align: 'center' });
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Report Date: ${new Date().toLocaleDateString()}`, 105, 28, { align: 'center' });
+
+    // Claim & Property Info
+    (doc as any).autoTable({
+        startY: 40,
+        head: [['Claim & Property Information']],
+        body: [
+            ['Claim #', values.claimNumber],
+            ['Policy #', values.policyNumber],
+            ['Date of Loss', values.dateOfLoss],
+            ['Client Name', values.clientName],
+            ['Client Email', values.clientEmail],
+            ['Client Phone', values.clientPhone],
+            ['Property Address', values.propertyAddress],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [41, 56, 78] },
+    });
+
+    // Inspection Details
+    (doc as any).autoTable({
+        startY: (doc as any).lastAutoTable.finalY + 10,
+        head: [['Inspection Details']],
+        body: [
+            ['Inspector', values.inspector || 'N/A'],
+            ['Inspector Phone', values.phone || 'N/A'],
+            ['Inspector Email', values.email || 'N/A'],
+            ['Hail (F/R/B/L)', `${values.hailF}/${values.hailR}/${values.hailB}/${values.hailL}`],
+            ['Wind Date', values.windDate || 'N/A'],
+            ['Ladder Now', values.ladderNow ? 'Yes' : 'No'],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [41, 56, 78] },
+    });
+
+    // Roof & Shingle Info
+     (doc as any).autoTable({
+        startY: (doc as any).lastAutoTable.finalY + 10,
+        head: [['Roof & Shingle Information']],
+        body: [
+          ['Eave (LF)', values.eaveLF || 'N/A'],
+          ['Shingle Type', values.shingleType || 'N/A'],
+          ['Layers', values.layers || 'N/A'],
+          ['Pitch', values.pitch || 'N/A'],
+          ['Total Squares', values.totalSquares || 'N/A'],
+          ['Shingle Make', values.shingleMake || 'N/A'],
+          ['Ice/Water Shield', values.iceWaterShield ? 'Yes' : 'No'],
+          ['Drip Edge', values.dripEdge ? 'Yes' : 'No'],
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [41, 56, 78] },
+    });
+
+    // Notes
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Inspector Notes', 14, (doc as any).lastAutoTable.finalY + 15);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const notes = doc.splitTextToSize(values.notes || 'No notes provided.', 180);
+    doc.text(notes, 14, (doc as any).lastAutoTable.finalY + 22);
+
+    // Footer
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
+        doc.text('ScopeSheet Pro | (866)801-1258', 14, 290);
+    }
+    
+    doc.save(`ScopeSheet-${values.claimNumber}.pdf`);
+
     toast({
-      title: 'Scope Sheet Saved',
-      description: 'Your scope sheet has been successfully saved.',
+      title: 'Report Generated',
+      description: 'Your PDF report has been downloaded.',
     })
   }
 
@@ -169,8 +243,8 @@ export default function ScopeSheetPage() {
             </p>
           </div>
           <Button type="submit">
-            <Save className="mr-2" />
-            Save Sheet
+            <Download className="mr-2" />
+            Download Report
           </Button>
         </div>
 
@@ -692,14 +766,14 @@ export default function ScopeSheetPage() {
                                      <FormLabel>{item}</FormLabel>
                                      <FormField
                                         control={form.control}
-                                        name={`${name}QtyLead`}
+                                        name={`${name}QtyLead` as any}
                                         render={({ field }) => (
                                             <FormItem><FormControl><Input {...field} /></FormControl></FormItem>
                                         )}
                                     />
                                      <FormField
                                         control={form.control}
-                                        name={`${name}QtyPlastic`}
+                                        name={`${name}QtyPlastic` as any}
                                         render={({ field }) => (
                                             <FormItem><FormControl><Input {...field} /></FormControl></FormItem>
                                         )}
@@ -811,5 +885,3 @@ export default function ScopeSheetPage() {
     </Form>
   )
 }
-
-    
