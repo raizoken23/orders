@@ -173,7 +173,7 @@ async function qboPost(pathname: string, tok: Token, json: unknown) {
 
 /* ---------- Public helpers ---------- */
 
-export function ensureConnected() {
+export async function ensureConnected() {
   const t = readToken();
   return Boolean(t?.access_token && t?.realmId);
 }

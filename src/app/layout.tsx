@@ -1,15 +1,16 @@
 import type { Metadata } from 'next'
 import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
-import { pdfPreflight } from '@/ai/preflight/pdfPreflight';
-
-try {
-  // Run preflight check on server boot to fail fast if Python entrypoint is wrong.
-  pdfPreflight();
-} catch (e) {
-    console.error("PDF PREFLIGHT FAILED. The Python subsystem for PDF generation is not correctly configured.");
-    console.error(e);
-}
+// Temporarily disable PDF preflight during build to avoid failing the Next.js static export.
+// import { pdfPreflight } from '@/ai/preflight/pdfPreflight';
+// if (process.env.NODE_ENV !== 'production') {
+//   try {
+//     pdfPreflight();
+//   } catch (e) {
+//     console.error("[PDF PREFLIGHT] Disabled failure: Python subsystem not configured.");
+//     console.error(e);
+//   }
+// }
 
 
 export const metadata: Metadata = {

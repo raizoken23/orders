@@ -33,7 +33,7 @@ import { Separator } from '@/components/ui/separator'
 import { Download, File, Terminal, Wand2, TestTube } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -108,7 +108,7 @@ const demoData: ScopeSheetData = {
 };
 
 
-export default function ScopeSheetPage() {
+function ScopeSheetContent() {
   const { toast } = useToast()
   const searchParams = useSearchParams()
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1036,6 +1036,14 @@ export default function ScopeSheetPage() {
       </form>
     </Form>
   )
+}
+
+export default function ScopeSheetPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-muted-foreground">Loading scope sheet...</div>}>
+      <ScopeSheetContent />
+    </Suspense>
+  );
 }
 
     
