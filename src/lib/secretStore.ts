@@ -49,7 +49,7 @@ export async function getSecret<T = any>(ns: string): Promise<T | null> {
   } catch { return null; }
 }
 
-export function mask(s?: string) {
+export async function mask(s?: string) {
   if (!s) return '';
   const tail = s.slice(-4);
   return '•'.repeat(Math.max(0, s.length - 4)) + tail;
