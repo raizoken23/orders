@@ -119,7 +119,7 @@ hvacventQtyPlastic: z.string().optional(),
   collateralDamage: z.string().optional(),
   notes: z.string().optional(),
   boxVentsQtyLead: z.string().optional(),
-  boxVentsQtyPlastic: zstring().optional(),
+  boxVentsQtyPlastic: z.string().optional(),
   boxVentsMetal: z.boolean().optional(),
   boxVentsPlastic: z.boolean().optional(),
   boxVentsMetalDamaged: z.boolean().optional(),
@@ -233,18 +233,19 @@ export default function ScopeSheetPage() {
 
   function onSubmit(values: z.infer<typeof scopeSheetSchema>) {
     const doc = new jsPDF({ orientation: 'p', unit: 'in', format: 'letter' });
+    const { width: pageWidth, height: pageHeight } = doc.internal.pageSize;
 
     // --- DESIGN TOKENS ---
     const m = 0.5; // margin
     const leftRail = 2.25;
     const gap = 0.125;
     const gridStep = 0.125;
-    
+
     // Rules
     const ruleHeavy = 0.02; // 2px
     const rule = 0.01; // 1px
     const ruleLight = 0.005; // 0.5px
-    
+
     // Palette
     const ink = '#000000';
     const gridColor = '#9a9a9a';
@@ -253,10 +254,8 @@ export default function ScopeSheetPage() {
     const yellow = '#fff2a6';
     const checkboxCyan = '#00a7c1';
 
-    // Page dimensions
-    const { width: pageWidth, height: pageHeight } = doc.internal.pageSize;
-    const contentW = pageWidth - (m * 2);
-    const contentH = pageHeight - (m * 2);
+    const contentW = pageWidth - m * 2;
+    const contentH = pageHeight - m * 2;
 
     doc.setFont('helvetica');
 
@@ -267,25 +266,28 @@ export default function ScopeSheetPage() {
         doc.setDrawColor(ink);
         doc.rect(x, y, size, size);
         if (checked) {
-            doc.setFontSize(size * 12); // Scale X size
-            doc.text('✕', x + size / 4, y + size * 0.8);
+            doc.setFontSize(size * 12);
+            doc.text('✕', x + size / 4.5, y + size * 0.8);
         }
     };
-    const drawIcon = (x:number, y:number, type: 'dot-fill'|'dot-open'|'dot-cyan'|'box-x'|'x', size = 0.14) => {
+    const drawIcon = (x: number, y: number, type: 'dot-fill' | 'dot-open' | 'dot-cyan' | 'box-x' | 'x', size = 0.14) => {
+        const center = x + size / 2;
+        const vCenter = y + size / 2;
         doc.setLineWidth(rule);
         doc.setDrawColor(ink);
-        const center = x + size/2;
-        const vCenter = y + size/2;
-        if (type === 'dot-fill') { doc.setFillColor(ink); doc.circle(center, vCenter, size/2, 'F'); }
-        if (type === 'dot-open') { doc.setDrawColor(ink); doc.circle(center, vCenter, size/2, 'S'); }
-        if (type === 'dot-cyan') { doc.setFillColor(checkboxCyan); doc.circle(center, vCenter, size/2, 'F'); }
+        if (type === 'dot-fill') { doc.setFillColor(ink); doc.circle(center, vCenter, size / 2, 'F'); }
+        if (type === 'dot-open') { doc.setDrawColor(ink); doc.circle(center, vCenter, size / 2, 'S'); }
+        if (type === 'dot-cyan') { doc.setFillColor(checkboxCyan); doc.circle(center, vCenter, size / 2, 'F'); }
         if (type === 'box-x') {
             doc.rect(x, y, size, size);
-            doc.line(x, y, x+size, y+size); doc.line(x, y+size, x+size, y);
+            doc.line(x, y + size, x + size, y);
+            doc.line(x, y, x + size, y + size);
         }
-        if (type === 'x') { doc.line(x,y, x+size, y+size); doc.line(x,y+size, x+size, y); }
-    }
-
+        if (type === 'x') {
+            doc.line(x, y + size, x + size, y);
+            doc.line(x, y, x + size, y + size);
+        }
+    };
 
     // --- HEADER ---
     const headerY = pageHeight - m;
@@ -296,34 +298,33 @@ export default function ScopeSheetPage() {
     doc.setLineWidth(ruleHeavy);
     doc.rect(m, headerY - headerH, brandBoxW, headerH);
     doc.setFontSize(12).setFont('helvetica', 'bold');
-    drawText('SEEKNOW', m + 0.14, headerY - 0.14);
+    drawText('SEEKNOW', m + 0.14, headerY - 0.45);
     doc.setFontSize(11).setFont('helvetica', 'normal');
-    drawText('(866) 801-1258', m + brandBoxW - 0.14, headerY - 0.14, { align: 'right' });
+    drawText('(866) 801-1258', m + 0.14, headerY - 0.65);
 
     // Contact Box
     const contactBoxX = m + brandBoxW + gap;
     const contactBoxW = 3.2;
     doc.setLineWidth(ruleHeavy);
     doc.rect(contactBoxX, headerY - headerH, contactBoxW, headerH);
+
     const contactFields = [
-        { label: 'Date', value: values.windDate, line: true },
-        { label: 'Company', value: 'Ladder Now', line: true },
-        { label: 'Inspector', value: values.inspector, line: true },
-        { label: 'Phone', value: values.phone, line: true },
-        { label: 'Email', value: values.email, line: true },
+        { label: 'Date', value: values.windDate || '' },
+        { label: 'Company', value: 'Ladder Now' },
+        { label: 'Inspector', value: values.inspector || '' },
+        { label: 'Phone', value: values.phone || '' },
+        { label: 'Email', value: values.email || '' },
     ];
     let currentContactY = headerY - 0.22;
     const contactLabelW = 0.9;
     const contactLineXStart = contactBoxX + contactLabelW + 0.05;
     const contactLineXEnd = contactBoxX + contactBoxW - 0.14;
-    contactFields.forEach(field => {
+    contactFields.forEach((field, i) => {
         doc.setFontSize(10);
         drawText(field.label, contactBoxX + 0.14, currentContactY);
-        if (field.line) {
-            doc.setLineWidth(rule);
-            doc.line(contactLineXStart, currentContactY + 0.02, contactLineXEnd, currentContactY + 0.02);
-            drawText(field.value || '', contactLineXStart + 0.05, currentContactY);
-        }
+        doc.setLineWidth(rule);
+        doc.line(contactLineXStart, currentContactY + 0.02, contactLineXEnd, currentContactY + 0.02);
+        drawText(field.value, contactLineXStart + 0.05, currentContactY);
         currentContactY -= 0.2;
     });
 
@@ -334,187 +335,245 @@ export default function ScopeSheetPage() {
     const damageY = pageHeight - m;
     doc.setLineWidth(ruleHeavy);
     doc.rect(damageX, damageY - damageH, damageW, damageH);
-    // Header
-    const damageRowH = 0.35;
+
     const damageHeaderY = damageY - damageH;
-    const damageColW = (damageW - 0.9) / 3;
+    const damageRowH = 0.35;
+    const damageHeaderCellW = (damageW - 0.9) / 3;
     doc.setFillColor(pink);
-    doc.rect(damageX, damageHeaderY, damageW, damageRowH, 'F');
+    doc.rect(damageX + 0.9, damageHeaderY, damageW - 0.9, damageRowH, 'F');
     doc.setLineWidth(rule);
     ['Hail', 'Wind', 'Tree'].forEach((label, i) => {
-        const x = damageX + 0.9 + (i * damageColW);
-        doc.vLine(x, damageHeaderY, damageY);
+        const x = damageX + 0.9 + i * damageHeaderCellW;
+        doc.vLine(x, damageHeaderY, damageHeaderY + damageRowH);
         doc.setTextColor(ink);
         doc.setFontSize(11).setFont('helvetica', 'normal');
-        drawText(label, x + damageColW / 2, damageHeaderY + damageRowH / 2 + 0.05, { align: 'center' });
+        drawText(label, x + damageHeaderCellW / 2, damageHeaderY + 0.22, { align: 'center' });
     });
-    // Rows
-    ['F:', 'R:', 'B:', 'L:'].forEach((label, i) => {
-        const y = damageY - (damageRowH * (i + 1));
+    doc.vLine(damageX + 0.9, damageHeaderY, damageY);
+
+    const damageRows = [
+        { label: 'F:', hail: values.hailF, wind: values.windF, tree: values.treeF },
+        { label: 'R:', hail: values.hailR, wind: values.windR, tree: values.treeR },
+        { label: 'B:', hail: values.hailB, wind: values.windB, tree: values.treeB },
+        { label: 'L:', hail: values.hailL, wind: values.windL, tree: values.treeL },
+    ];
+    damageRows.forEach((row, i) => {
+        const y = damageY - damageRowH * (i + 1);
         doc.hLine(damageX, y, damageX + damageW);
-        drawText(label, damageX + 0.1, y + damageRowH / 2 + 0.05);
+        drawText(row.label, damageX + 0.1, y + 0.22);
+        drawText(row.hail || '', damageX + 0.9 + damageHeaderCellW * 0.5, y + 0.22, { align: 'center' });
+        drawText(row.wind || '', damageX + 0.9 + damageHeaderCellW * 1.5, y + 0.22, { align: 'center' });
+        drawText(row.tree || '', damageX + 0.9 + damageHeaderCellW * 2.5, y + 0.22, { align: 'center' });
+        doc.vLine(damageX + 0.9, y, y + damageRowH);
+        doc.vLine(damageX + 0.9 + damageHeaderCellW, y, y + damageRowH);
+        doc.vLine(damageX + 0.9 + damageHeaderCellW * 2, y, y + damageRowH);
     });
 
-    // --- SHINGLE / CALC / AERIAL BAND ---
+    // --- MAIN LAYOUT BANDS ---
     const bandY = headerY - headerH - gap;
-    const bandH = 1.95;
-    
-    // Left Box (Shingle Info)
-    doc.setLineWidth(rule);
-    doc.rect(m, bandY - bandH, leftRail, bandH);
-    // Right Box (Calculations)
-    const bandRightX = m + leftRail + gap;
-    doc.rect(bandRightX, bandY - bandH, pageWidth - bandRightX - m, bandH);
-
+    const shingleBandH = 1.95;
 
     // --- KEY BAND ---
-    const keyY = bandY - bandH - gap;
-    const keyH = 0.8;
+    const keyBandY = bandY - shingleBandH - gap;
+    const keyBandH = 0.8;
     doc.setLineWidth(ruleHeavy);
-    doc.rect(m, keyY - keyH, contentW, keyH);
+    doc.rect(m, keyBandY - keyBandH, contentW, keyBandH);
     doc.setFillColor(cyan);
-    doc.rect(m, keyY - keyH, contentW, keyH, 'F');
+    doc.rect(m, keyBandY - keyBandH, contentW, keyBandH, 'F');
     doc.setTextColor(ink);
-    
-    // Legend Items
     doc.setFontSize(10).setFont('helvetica', 'normal');
-    let keyX = m + 0.15; let keyItemY = keyY - 0.2;
-    drawIcon(keyX, keyItemY-0.07, 'dot-fill'); drawText('Box Vent', keyX + 0.2, keyItemY);
-    keyX += 1.2;
-    drawIcon(keyX, keyItemY-0.07, 'dot-open'); drawText('Pipe Boot', keyX + 0.2, keyItemY);
-    keyX += 1.2;
-    drawIcon(keyX, keyItemY-0.07, 'dot-cyan'); drawText('HVAC', keyX + 0.2, keyItemY);
-    keyX += 1.0;
-    drawIcon(keyX, keyItemY-0.07, 'box-x'); drawText('Chimney', keyX + 0.2, keyItemY);
-    
-    keyX = m + 0.15; keyItemY = keyY - 0.4;
-    drawIcon(keyX, keyItemY-0.07, 'x'); drawText('Wind Damage (X)', keyX + 0.2, keyItemY);
-    keyX += 1.8;
+
+    let keyX = m + 0.15;
+    let keyItemY = keyBandY - 0.2;
+    const drawPill = (x: number, y: number, iconType: any, text: string, iconSize = 0.14) => {
+        drawIcon(x, y - iconSize / 2, iconType, iconSize);
+        drawText(text, x + iconSize + 0.05, y);
+        return text.length * 0.05 + 0.5; // Estimate width
+    };
+    keyX += drawPill(keyX, keyItemY, 'dot-fill', 'Box Vent');
+    keyX += drawPill(keyX, keyItemY, 'dot-open', 'Pipe Boot');
+    keyX += drawPill(keyX, keyItemY, 'dot-cyan', 'HVAC');
+    keyX += drawPill(keyX, keyItemY, 'box-x', 'Chimney');
+    keyX += drawPill(keyX, keyItemY - 0.02, 'x', 'Wind Damage (X)');
+
+    keyX = m + 0.15;
+    keyItemY -= 0.2;
     drawText('TS = Test Square', keyX, keyItemY);
     keyX += 1.5;
     drawText('TC = Thermal Cracking', keyX, keyItemY);
-    
-    keyX = m + 0.15; keyItemY = keyY - 0.6;
-    doc.setFillColor(cyan); doc.rect(keyX-0.05, keyItemY-0.12, 1.2, 0.15, 'F'); doc.setTextColor(ink);
-    drawText('B = Blistering', keyX, keyItemY);
-    keyX += 1.5;
-    doc.setFillColor(cyan); doc.rect(keyX-0.05, keyItemY-0.12, 1.6, 0.15, 'F'); doc.setTextColor(ink);
-    drawText('M = Mechanical Damage', keyX, keyItemY);
-     keyX += 2.0;
-    doc.setFillColor(cyan); doc.rect(keyX-0.05, keyItemY-0.12, 1.4, 0.15, 'F'); doc.setTextColor(ink);
-    drawText('PV = Power Vent', keyX, keyItemY);
-     keyX += 1.5;
-    drawText('E = Exhaust Vent', keyX, keyItemY);
 
+    keyX = m + 0.15;
+    keyItemY -= 0.2;
+    doc.setFillColor(cyan); doc.rect(keyX - 0.05, keyItemY - 0.1, 1, 0.15, 'F'); doc.setTextColor(ink);
+    drawText('B = Blistering', keyX, keyItemY);
+    keyX += 1.2;
+    doc.setFillColor(cyan); doc.rect(keyX - 0.05, keyItemY - 0.1, 1.4, 0.15, 'F'); doc.setTextColor(ink);
+    drawText('M = Mechanical Damage', keyX, keyItemY);
+    keyX += 1.6;
+    doc.setFillColor(cyan); doc.rect(keyX - 0.05, keyItemY - 0.1, 1.2, 0.15, 'F'); doc.setTextColor(ink);
+    drawText('PV = Power Vent', keyX, keyItemY);
+    keyX += 1.4;
+    drawText('E = Exhaust Vent', keyX, keyItemY);
 
     // Hail Diameter Scale
     const scaleW = 3.4;
     const scaleX = pageWidth - m - scaleW;
-    const scaleY = keyY - keyH;
-    const scaleH = keyH;
+    const scaleH = keyBandH;
     doc.setFillColor('#ffffff');
-    doc.rect(scaleX-0.08, scaleY+0.08, scaleW, scaleH - 0.16, 'F');
+    doc.rect(scaleX - 0.08, keyBandY - scaleH + 0.08, scaleW, scaleH - 0.16, 'F');
     doc.setDrawColor(ink);
     doc.setLineWidth(rule);
-    doc.rect(scaleX-0.08, scaleY+0.08, scaleW, scaleH - 0.16);
+    doc.rect(scaleX - 0.08, keyBandY - scaleH + 0.08, scaleW, scaleH - 0.16);
 
     const diameters = ['1″', '2″', '3″', '4″', '5″', '6″', '7″', '8″', '9″', '10″', '11″', '12″'];
     const factors = ['.08', '.17', '.25', '.33', '.42', '.50', '.58', '.67', '.75', '.83', '.92', '1.00'];
     const scaleColW = scaleW / 12;
     doc.setFontSize(10);
     diameters.forEach((d, i) => {
-        const x = scaleX -0.08 + i * scaleColW;
-        doc.vLine(x, scaleY + 0.08, scaleY + scaleH-0.08);
-        drawText(d, x + scaleColW/2, scaleY + 0.08 + (scaleH-0.16)*0.25, { align: 'center'});
+        const x = scaleX - 0.08 + (i * scaleColW);
+        doc.vLine(x, keyBandY - scaleH + 0.08, keyBandY);
+        drawText(d, x + scaleColW / 2, keyBandY - scaleH + 0.25, { align: 'center' });
     });
     doc.setFontSize(8);
     factors.forEach((f, i) => {
-        const x = scaleX -0.08 + i * scaleColW;
-        drawText(f, x + scaleColW/2, scaleY + 0.08 + (scaleH-0.16)*0.75, { align: 'center'});
+        const x = scaleX - 0.08 + (i * scaleColW);
+        drawText(f, x + scaleColW / 2, keyBandY - 0.25, { align: 'center' });
     });
 
 
-    // --- LEFT RAIL ---
-    const leftRailY_end = keyY - keyH - gap;
-    doc.setLineWidth(ruleHeavy);
-    doc.rect(m, m, leftRail, leftRailY_end - m);
-    let currentLeftY = leftRailY_end;
-    const leftRowH = 0.35;
-    const drawLeftRow = (y: number, label: string, content: ()=>void) => {
-        doc.setLineWidth(rule);
-        doc.hLine(m, y, m + leftRail);
-        doc.setFillColor(yellow);
-        doc.rect(m + 0.02, y - leftRowH + 0.02, 1.28, leftRowH - 0.04, 'F');
-        doc.setTextColor(ink).setFontSize(10).setFont('helvetica', 'normal');
-        drawText(label, m + 0.06, y - leftRowH/2 + 0.04);
-        doc.setDrawColor(ink);
-        content();
-        return y - leftRowH;
-    }
-
-    currentLeftY = drawLeftRow(currentLeftY, 'Layers', () => { drawText(values.layers || '', m+1.45, currentLeftY-0.15); doc.line(m+1.4, currentLeftY - 0.1, m+leftRail-0.1, currentLeftY - 0.1); });
-    currentLeftY = drawLeftRow(currentLeftY, 'Pitch', () => { drawText(values.pitch || '', m+1.45, currentLeftY-0.15); doc.line(m+1.4, currentLeftY - 0.1, m+leftRail-0.1, currentLeftY - 0.1); });
-    // ... continue for all left rail items
-
-    // --- SKETCH AREA ---
-    const sketchX = m + leftRail + gap;
-    const sketchY = m + 0.8;
-    const sketchW = pageWidth - sketchX - m;
+    // --- LEFT RAIL & SKETCH AREA ---
+    const leftRailY_end = keyBandY - keyBandH - gap;
+    const sketchY = m;
     const sketchH = leftRailY_end - sketchY;
+    const sketchX = m + leftRail + gap;
+    const sketchW = contentW - leftRail - gap;
+
+    // Left Rail Box
     doc.setLineWidth(ruleHeavy);
+    doc.rect(m, sketchY, leftRail, sketchH);
+
+    // Sketch Area Box
     doc.rect(sketchX, sketchY, sketchW, sketchH);
 
-    // Grid lines
+    // Sketch grid lines
     doc.setLineWidth(ruleLight);
     doc.setDrawColor(gridColor);
-    for (let i = gridStep; i < sketchW; i += gridStep) {
-        doc.line(sketchX + i, sketchY, sketchX + i, sketchY + sketchH);
-    }
-    for (let i = gridStep; i < sketchH; i += gridStep) {
-        doc.line(sketchX, sketchY + i, sketchX + sketchW, sketchY + i);
-    }
+    for (let i = gridStep; i < sketchW; i += gridStep) { doc.line(sketchX + i, sketchY, sketchX + i, sketchY + sketchH); }
+    for (let i = gridStep; i < sketchH; i += gridStep) { doc.line(sketchX, sketchY + i, sketchX + sketchW, sketchY + i); }
 
     // --- FOOTER ---
-    const footerY = m + 0.65;
-    const footerW = contentW - 1.2 - gap;
-
-    // Triplet fields
-    const tripletW = footerW;
-    const fieldW = tripletW / 3;
-    doc.setFontSize(10).setFont('helvetica', 'normal');
+    const footerH = 0.65;
+    const tripletH = 0.4;
     doc.setLineWidth(rule);
-    drawText('Max Hail Diameter', m, footerY - 0.05);
-    doc.line(m, footerY - 0.1, m + fieldW - gap, footerY - 0.1);
-    drawText(values.maxHailDiameter || '', m, footerY-0.2);
+    const notesH = 0.55;
+    const notesW = contentW - 1.2 - gap;
+    const notesX = m;
+    const notesY = m;
+    const tripletY = notesY + notesH + 0.05;
 
-    drawText('Storm Direction', m + fieldW, footerY - 0.05);
-    doc.line(m + fieldW, footerY - 0.1, m + fieldW*2 - gap, footerY-0.1);
-    drawText(values.stormDirection || '', m + fieldW, footerY-0.2);
-    
-    drawText('Collateral Damage', m + fieldW*2, footerY - 0.05);
-    doc.line(m + fieldW*2, footerY - 0.1, m + tripletW, footerY-0.1);
-    drawText(values.collateralDamage || '', m + fieldW*2, footerY-0.2);
+    // Triplet Fields
+    doc.setFontSize(9).setFont('helvetica', 'normal');
+    const fieldW = notesW / 3;
+    drawText('Max Hail Diameter', notesX, tripletY);
+    doc.line(notesX, tripletY - 0.1, notesX + fieldW - gap, tripletY - 0.1);
+    drawText(values.maxHailDiameter || '', notesX, tripletY - 0.15);
+
+    drawText('Storm Direction', notesX + fieldW, tripletY);
+    doc.line(notesX + fieldW, tripletY - 0.1, notesX + fieldW * 2 - gap, tripletY - 0.1);
+    drawText(values.stormDirection || '', notesX + fieldW, tripletY - 0.15);
+
+    drawText('Collateral Damage', notesX + fieldW * 2, tripletY);
+    doc.line(notesX + fieldW * 2, tripletY - 0.1, notesX + notesW, tripletY - 0.1);
+    drawText(values.collateralDamage || '', notesX + fieldW * 2, tripletY - 0.15);
 
     // Notes Box
-    const notesY = m;
-    const notesH = 0.55;
-    doc.setLineWidth(rule);
-    doc.rect(m, notesY, footerW, notesH);
-    drawText(values.notes || '', m + 0.05, notesY + notesH - 0.1, { maxWidth: footerW - 0.1 });
+    doc.rect(notesX, notesY, notesW, notesH);
+    drawText(values.notes || '', notesX + 0.05, notesY + notesH - 0.1, { maxWidth: notesW - 0.1, baseline: 'top' });
 
     // Compass Rose
     const compassSize = 1.2;
     const compassX = pageWidth - m - compassSize;
     const compassY = m;
-    doc.setLineWidth(rule);
+    doc.setLineWidth(ruleHeavy);
     doc.rect(compassX, compassY, compassSize, compassSize);
+    doc.setLineWidth(rule);
     const innerCompassSize = 0.7;
     doc.rect(compassX + (compassSize-innerCompassSize)/2, compassY + (compassSize-innerCompassSize)/2, innerCompassSize, innerCompassSize);
     doc.setFontSize(10).setFont('helvetica', 'bold');
-    drawText('F', compassX + compassSize/2, compassY + compassSize - 0.1, { align: 'center'});
-    drawText('B', compassX + compassSize/2, compassY + 0.15, { align: 'center'});
-    drawText('R', compassX + compassSize - 0.1, compassY + compassSize/2 + 0.05, { align: 'center'});
-    drawText('L', compassX + 0.1, compassY + compassSize/2 + 0.05, { align: 'center'});
+    drawText('F', compassX + compassSize / 2, compassY + compassSize - 0.1, { align: 'center' });
+    drawText('B', compassX + compassSize / 2, compassY + 0.15, { align: 'center' });
+    drawText('R', compassX + compassSize - 0.1, compassY + compassSize / 2 + 0.05, { align: 'center' });
+    drawText('L', compassX + 0.1, compassY + compassSize / 2 + 0.05, { align: 'center' });
+
+
+    // --- DYNAMIC LEFT RAIL CONTENT ---
+    let currentLeftY = leftRailY_end;
+    const rowH = 0.35;
+    const chipW = 1.3;
+    const drawLeftRow = (label: string, content: () => void, height = rowH) => {
+        doc.setLineWidth(rule);
+        doc.hLine(m, currentLeftY - height, m + leftRail);
+        doc.setFillColor(yellow);
+        doc.rect(m + 0.02, currentLeftY - height + 0.02, chipW, height - 0.04, 'F');
+        doc.setTextColor(ink).setFontSize(10).setFont('helvetica', 'normal');
+        drawText(label, m + 0.06, currentLeftY - height / 2 + 0.04);
+        doc.setDrawColor(ink);
+        content();
+        currentLeftY -= height;
+    };
+    
+    drawLeftRow('Other', () => {
+       drawCheckbox(m + chipW + 0.1, currentLeftY - rowH / 2 - 0.08, values.otherSolar);
+       drawText('Solar', m + chipW + 0.3, currentLeftY - rowH / 2 + 0.04);
+       drawCheckbox(m + chipW + 0.8, currentLeftY - rowH / 2 - 0.08, values.otherVentE);
+       drawText('Vent E', m + chipW + 1.0, currentLeftY - rowH / 2 + 0.04);
+    });
+    drawLeftRow('Chimney Flashing', () => { drawText(values.chimneyFlashing || '', m + chipW + 0.1, currentLeftY - rowH / 2 + 0.04); });
+    drawLeftRow('Wood / Metal', () => { drawText(values.woodMetal || '', m + chipW + 0.1, currentLeftY - rowH / 2 + 0.04); });
+    drawLeftRow('Fascia', () => { drawText(`Size: ${values.fasciaSize || ''}`, m + chipW + 0.1, currentLeftY - rowH / 2 + 0.04); });
+    drawLeftRow('Downspouts', () => {
+        drawCheckbox(m + chipW + 0.1, currentLeftY - rowH/2 - 0.08, values.downspoutsSize === '2x3');
+        drawText('2x3', m+chipW+0.3, currentLeftY - rowH/2 + 0.04);
+        drawCheckbox(m + chipW + 0.7, currentLeftY - rowH/2 - 0.08, values.downspoutsSize === '3x4');
+        drawText('3x4', m+chipW+0.9, currentLeftY - rowH/2 + 0.04);
+    });
+    drawLeftRow('Gutters', () => {
+        drawText(`LF: ${values.guttersLF || ''}`, m + chipW + 0.1, currentLeftY - rowH / 2 + 0.04);
+        drawCheckbox(m + chipW + 0.7, currentLeftY - rowH / 2 - 0.08, values.guttersSize === '5"');
+        drawText('5"', m + chipW + 0.9, currentLeftY - rowH / 2 + 0.04);
+         drawCheckbox(m + chipW + 1.2, currentLeftY - rowH / 2 - 0.08, values.guttersSize === '6"');
+        drawText('6"', m + chipW + 1.4, currentLeftY - rowH / 2 + 0.04);
+    });
+    drawLeftRow('Pipes', () => {
+        drawText(`Qty: ${values.pipeQty || ''}`, m + chipW + 0.1, currentLeftY - rowH / 2 + 0.04);
+        drawCheckbox(m + chipW + 0.7, currentLeftY - rowH / 2 - 0.08, values.pipeLead);
+        drawText('L', m + chipW + 0.9, currentLeftY - rowH / 2 + 0.04);
+        drawCheckbox(m + chipW + 1.2, currentLeftY - rowH / 2 - 0.08, values.pipePlastic);
+        drawText('P', m + chipW + 1.4, currentLeftY - rowH / 2 + 0.04);
+    });
+    drawLeftRow('SAT', () => { drawText(`Lead: ${values.satQtyLead || ''} Plas: ${values.satQtyPlastic || ''}`, m + chipW + 0.1, currentLeftY - rowH/2+0.04); });
+    drawLeftRow('Skylight', () => { drawText(`Lead: ${values.skylightQtyLead || ''} Plas: ${values.skylightQtyPlastic || ''}`, m + chipW + 0.1, currentLeftY - rowH/2+0.04); });
+    drawLeftRow('Power Vent', () => { drawText(`Lead: ${values.powerVentQtyLead || ''} Plas: ${values.powerVentQtyPlastic || ''}`, m + chipW + 0.1, currentLeftY - rowH/2+0.04); });
+    drawLeftRow('Rain Diverter', () => { drawText(`Lead: ${values.raindiverterQtyLead || ''} Plas: ${values.raindiverterQtyPlastic || ''}`, m + chipW + 0.1, currentLeftY - rowH/2+0.04); });
+    drawLeftRow('HVAC Vent', () => { drawText(`Lead: ${values.hvacventQtyLead || ''} Plas: ${values.hvacventQtyPlastic || ''}`, m + chipW + 0.1, currentLeftY - rowH/2+0.04); });
+    drawLeftRow('Turbine', () => { drawText(`Lead: ${values.turbineQtyLead || ''} Plas: ${values.turbineQtyPlastic || ''}`, m + chipW + 0.1, currentLeftY - rowH/2+0.04); });
+    drawLeftRow('Ridge Vent', () => {
+        drawText(`LF: ${values.ridgeVentLF || ''}`, m + chipW + 0.1, currentLeftY - rowH / 2 + 0.04);
+        drawCheckbox(m + chipW + 0.7, currentLeftY - rowH / 2 - 0.08, values.ridgeVentPlastic);
+        drawText('Plastic', m + chipW + 0.9, currentLeftY - rowH / 2 + 0.04);
+    });
+    drawLeftRow('Box Vents', () => {
+        drawCheckbox(m + chipW + 0.1, currentLeftY - rowH / 2 - 0.08, values.boxVentsMetal);
+        drawText('M', m + chipW + 0.3, currentLeftY - rowH / 2 + 0.04);
+        drawCheckbox(m + chipW + 0.6, currentLeftY - rowH / 2 - 0.08, values.boxVentsPlastic);
+        drawText('P', m + chipW + 0.8, currentLeftY - rowH / 2 + 0.04);
+         drawCheckbox(m + chipW + 1.1, currentLeftY - rowH / 2 - 0.08, values.boxVentsMetalDamaged);
+        drawText('D', m + chipW + 1.3, currentLeftY - rowH / 2 + 0.04);
+    });
+
+    drawLeftRow('Pitch', () => { drawText(values.pitch || '', m + chipW + 0.1, currentLeftY - rowH / 2 + 0.04); });
+    drawLeftRow('Layers', () => { drawText(values.layers || '', m + chipW + 0.1, currentLeftY - rowH / 2 + 0.04); });
+
 
     doc.save(`ScopeSheet-${values.claimNumber || 'DEMO'}.pdf`);
 
