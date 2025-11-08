@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
+import { pdfPreflight } from '@/ai/preflight/pdfPreflight';
+
+// Run preflight check on server boot
+pdfPreflight();
 
 export const metadata: Metadata = {
   title: 'ScopeSheet Pro',

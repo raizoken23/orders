@@ -1,4 +1,6 @@
-# minimal entrypoint + aliases
+
+# pdfsys/stamp_pdf.py
+# pip deps: pypdf>=5, reportlab>=4
 import io, os, json, base64, traceback
 from typing import Dict, Any, Union
 from reportlab.pdfgen import canvas
@@ -36,7 +38,6 @@ def _draw_text(c, x_in, y_in, txt, size=10, font="Helvetica", align="left", max_
 def _draw_check(c, x_in, y_in, size_in=0.16, mark="X"):
     x = x_in*inch; y = y_in*inch; s = size_in*inch
     # The box is already on the template, we just draw the mark.
-    # c.rect(x, y, s, s, stroke=1, fill=0)
     if str(mark).upper()=="X":
         # Draw a simple 'X'
         c.setFont("Helvetica-Bold", s * 0.9)
@@ -89,8 +90,10 @@ def run(event: Dict[str,Any]) -> Dict[str,str]:
         payload: Dict[str,Any] = event.get("payload", {})
     except Exception as e:
         return _err("CONTRACT_ERROR", "Missing required keys template|coords|payload", str(e))
+    
     if not os.path.exists(template):
         return _err("TEMPLATE_NOT_FOUND", template)
+        
     coords = None
     if isinstance(coords_arg, str):
         if not os.path.exists(coords_arg): return _err("COORDS_NOT_FOUND", coords_arg)
@@ -98,6 +101,7 @@ def run(event: Dict[str,Any]) -> Dict[str,str]:
             coords = json.load(f)
     else:
         coords = coords_arg
+
     try:
         overlay = _render_overlay(coords, payload)
         pdf_bytes = _merge(template, overlay)
