@@ -21,6 +21,11 @@ import {
   PanelLeft,
   FileUp,
   Image,
+  AreaChart,
+  Grid,
+  Sparkles,
+  FilePlus,
+  CircleDollarSign
 } from 'lucide-react'
 
 const links = [
@@ -28,6 +33,10 @@ const links = [
   { href: '/import-claim', label: 'New Sheet', icon: FileUp },
   { href: '/scope-sheet', label: 'Scope Sheet', icon: FileText },
   { href: '/image-analysis', label: 'Image Analysis', icon: Image },
+  { href: '/roof-diagram', label: 'Roof Diagram', icon: AreaChart },
+  { href: '/sub-sheets', label: 'Sub Sheets', icon: FilePlus },
+  { href: '/hub', label: 'Investigator Hub', icon: Sparkles },
+  { href: '/pricing', label: 'Pricing', icon: CircleDollarSign },
 ]
 
 const bottomLinks = [{ href: '/settings', label: 'Settings', icon: Settings }]
