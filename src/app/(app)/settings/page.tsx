@@ -9,6 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +22,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ShieldCheck, Lock, Briefcase } from 'lucide-react';
+import { ShieldCheck, Lock, Briefcase, User, Bot } from 'lucide-react';
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -63,106 +69,114 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        {/* User Specific Settings */}
-        <div className="lg:col-span-2 space-y-8">
-            <Card>
-                <CardHeader>
-                <CardTitle className="font-headline">Profile</CardTitle>
-                <CardDescription>
-                    Update your personal information. This is visible only to you.
-                </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" defaultValue="John Doe" />
-                    </div>
-                    <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        defaultValue="john.doe@example.com"
-                        readOnly
-                    />
-                    </div>
-                </div>
-                <Button>Save Profile</Button>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                <CardTitle className="font-headline">AI Provider</CardTitle>
-                <CardDescription>
-                    Choose the model for AI tasks. This setting is unique to your user account.
-                </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <RadioGroup value={provider} onValueChange={handleProviderChange} className="grid md:grid-cols-2 gap-4">
-                        <Label htmlFor="google-provider" className="flex flex-col gap-3 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:shadow-sm">
-                            <div className="flex items-center justify-between">
-                                <span className="font-semibold">Google Gemini</span>
-                                <RadioGroupItem value="google" id="google-provider" />
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                                Uses the default app configuration. Requires an admin-set API key.
-                            </p>
-                        </Label>
-                        <Label htmlFor="openai-provider" className="flex flex-col gap-3 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:shadow-sm">
-                            <div className="flex items-center justify-between">
-                                <span className="font-semibold">OpenAI</span>
-                                <RadioGroupItem value="openai" id="openai-provider" />
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                                Uses your personal OpenAI API key, stored securely in your browser.
-                            </p>
-                        </Label>
-                    </RadioGroup>
-
-                {provider === 'openai' && (
-                    <div className="space-y-4 p-4 border rounded-lg bg-card">
-                    <div className="space-y-2">
-                        <Label htmlFor="openai-key">Your OpenAI API Key</Label>
-                        <div className="flex gap-2">
-                            <Input
-                                id="openai-key"
-                                type="password"
-                                value={keyInput}
-                                onChange={(e) => setKeyInput(e.target.value)}
-                                placeholder="sk-..."
-                            />
-                            <Button onClick={handleSaveKey}>Save Key</Button>
+      <Card>
+        <CardContent className="p-0">
+           <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+              <AccordionItem value="item-1">
+                <AccordionTrigger className="px-6 text-lg font-semibold">
+                  <div className="flex items-center gap-3">
+                    <User className="size-5 text-primary" />
+                    Profile
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
+                  <p className="text-muted-foreground mb-4">
+                      Update your personal information. This is visible only to you.
+                  </p>
+                  <div className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                        <Label htmlFor="name">Full Name</Label>
+                        <Input id="name" defaultValue="John Doe" />
+                        </div>
+                        <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                            id="email"
+                            type="email"
+                            defaultValue="john.doe@example.com"
+                            readOnly
+                        />
                         </div>
                     </div>
-                    <Alert>
-                        <ShieldCheck className="h-4 w-4" />
-                        <AlertTitle>Your Key is Safe</AlertTitle>
-                        <AlertDescription>
-                        Your API key is stored only in your browser's local storage. It is never sent to or stored on our servers.
-                        </AlertDescription>
-                    </Alert>
-                    </div>
-                )}
-                </CardContent>
-            </Card>
-        </div>
+                    <Button>Save Profile</Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-        {/* Admin and Global Settings */}
-        <div className="lg:col-span-1 space-y-8">
-             <Card className="border-primary border-2">
-                <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2">
-                    <Lock/>
+              <AccordionItem value="item-2">
+                <AccordionTrigger className="px-6 text-lg font-semibold">
+                  <div className="flex items-center gap-3">
+                    <Bot className="size-5 text-primary" />
+                    AI Provider
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
+                    <p className="text-muted-foreground mb-4">
+                      Choose the model for AI tasks. This setting is unique to your user account.
+                    </p>
+                    <div className="space-y-6">
+                      <RadioGroup value={provider} onValueChange={handleProviderChange} className="grid md:grid-cols-2 gap-4">
+                          <Label htmlFor="google-provider" className="flex flex-col gap-3 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:shadow-sm">
+                              <div className="flex items-center justify-between">
+                                  <span className="font-semibold">Google Gemini</span>
+                                  <RadioGroupItem value="google" id="google-provider" />
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                  Uses the default app configuration with a globally available model.
+                              </p>
+                          </Label>
+                          <Label htmlFor="openai-provider" className="flex flex-col gap-3 rounded-lg border p-4 cursor-pointer hover:bg-accent has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:shadow-sm">
+                              <div className="flex items-center justify-between">
+                                  <span className="font-semibold">OpenAI</span>
+                                  <RadioGroupItem value="openai" id="openai-provider" />
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                  Uses your personal OpenAI API key, stored securely in your browser.
+                              </p>
+                          </Label>
+                      </RadioGroup>
+
+                      {provider === 'openai' && (
+                          <div className="space-y-4 p-4 border rounded-lg bg-card">
+                          <div className="space-y-2">
+                              <Label htmlFor="openai-key">Your OpenAI API Key</Label>
+                              <div className="flex gap-2">
+                                  <Input
+                                      id="openai-key"
+                                      type="password"
+                                      value={keyInput}
+                                      onChange={(e) => setKeyInput(e.target.value)}
+                                      placeholder="sk-..."
+                                  />
+                                  <Button onClick={handleSaveKey}>Save Key</Button>
+                              </div>
+                          </div>
+                          <Alert>
+                              <ShieldCheck className="h-4 w-4" />
+                              <AlertTitle>Your Key is Safe</AlertTitle>
+                              <AlertDescription>
+                              Your API key is stored only in your browser's local storage. It is never sent to or stored on our servers.
+                              </AlertDescription>
+                          </Alert>
+                          </div>
+                      )}
+                    </div>
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem value="item-3" className="border-b-0">
+                <AccordionTrigger className="px-6 text-lg font-semibold">
+                   <div className="flex items-center gap-3">
+                    <Lock className="size-5 text-primary" />
                     Admin Settings
-                </CardTitle>
-                <CardDescription>
-                    Global settings for the application. Visible only to admins.
-                </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
+                  <p className="text-muted-foreground mb-4">
+                      Global settings for the application. Visible only to admins.
+                  </p>
+                  <div className="space-y-6">
                     <div className="space-y-2">
                         <h4 className="font-semibold">Access Control</h4>
                         <p className="text-xs text-muted-foreground">
@@ -175,6 +189,17 @@ export default function SettingsPage() {
                         <p className="text-xs text-muted-foreground pt-2">Only users with an email from a whitelisted domain will be able to register.</p>
                     </div>
                      <Separator />
+                     <div className="space-y-2">
+                        <h4 className="font-semibold">QuickBooks Integration</h4>
+                         <p className="text-xs text-muted-foreground">
+                            Connect your QuickBooks account to sync invoices and payments.
+                        </p>
+                        <Button variant="outline" className="w-full" disabled>
+                            <Briefcase className="mr-2"/>
+                            Connect with QuickBooks
+                        </Button>
+                    </div>
+                     <Separator />
                     <div className="space-y-2">
                         <h4 className="font-semibold">Monetization (Post-Beta)</h4>
                          <p className="text-xs text-muted-foreground">
@@ -185,30 +210,32 @@ export default function SettingsPage() {
                             Connect with Stripe
                         </Button>
                     </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                <CardTitle className="font-headline">Subscription</CardTitle>
-                <CardDescription>
-                    Manage your current plan and billing details.
-                </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                    <div>
-                    <p className="font-medium">Current Plan: Beta</p>
-                    <p className="text-sm text-muted-foreground">
-                        Free access during the beta period.
-                    </p>
-                    </div>
-                    <Button variant="outline" disabled>Manage</Button>
-                </div>
-                </CardContent>
-            </Card>
-        </div>
-      </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+          </Accordion>
+        </CardContent>
+      </Card>
+      
+       <Card>
+          <CardHeader>
+          <CardTitle className="font-headline">Subscription</CardTitle>
+          <CardDescription>
+              Manage your current plan and billing details.
+          </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+              <div>
+              <p className="font-medium">Current Plan: Beta</p>
+              <p className="text-sm text-muted-foreground">
+                  Free access during the beta period.
+              </p>
+              </div>
+              <Button variant="outline" disabled>Manage</Button>
+          </div>
+          </CardContent>
+      </Card>
     </div>
   );
 }

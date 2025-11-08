@@ -25,6 +25,7 @@ import {
   Sparkles,
   FilePlus,
   CircleDollarSign,
+  Briefcase,
 } from 'lucide-react'
 
 const links = [
@@ -35,10 +36,12 @@ const links = [
   { href: '/roof-diagram', label: 'Roof Diagram', icon: AreaChart },
   { href: '/sub-sheets', label: 'Sub Sheets', icon: FilePlus },
   { href: '/hub', label: 'Investigator Hub', icon: Sparkles },
-  { href: '/pricing', label: 'Pricing', icon: CircleDollarSign },
 ]
 
-const bottomLinks = [{ href: '/settings', label: 'Settings', icon: Settings }]
+const bottomLinks = [
+  { href: '/pricing', label: 'Pricing', icon: CircleDollarSign },
+  { href: '/settings', label: 'Settings', icon: Settings },
+]
 
 export default function AppSidebar() {
   const pathname = usePathname()
