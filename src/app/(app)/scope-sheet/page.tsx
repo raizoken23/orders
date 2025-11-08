@@ -91,7 +91,7 @@ const scopeSheetSchema = z.object({
   turbineQtyLead: z.string().optional(),
   turbineQtyPlastic: z.string().optional(),
   hvacventQtyLead: z.string().optional(),
-hvacventQtyPlastic: z.string().optional(),
+  hvacventQtyPlastic: z.string().optional(),
   raindiverterQtyLead: z.string().optional(),
   raindiverterQtyPlastic: z.string().optional(),
   powerVentQtyLead: z.string().optional(),
@@ -271,21 +271,31 @@ export default function ScopeSheetPage() {
         }
     };
     const drawIcon = (x: number, y: number, type: 'dot-fill' | 'dot-open' | 'dot-cyan' | 'box-x' | 'x', size = 0.14) => {
-        const center = x + size / 2;
-        const vCenter = y + size / 2;
+        const centerX = x + size / 2;
+        const centerY = y + size / 2;
         doc.setLineWidth(rule);
         doc.setDrawColor(ink);
-        if (type === 'dot-fill') { doc.setFillColor(ink); doc.circle(center, vCenter, size / 2, 'F'); }
-        if (type === 'dot-open') { doc.setDrawColor(ink); doc.circle(center, vCenter, size / 2, 'S'); }
-        if (type === 'dot-cyan') { doc.setFillColor(checkboxCyan); doc.circle(center, vCenter, size / 2, 'F'); }
+
+        if (type === 'dot-fill') {
+            doc.setFillColor(ink);
+            doc.circle(centerX, centerY, size / 2, 'F');
+        }
+        if (type === 'dot-open') {
+            doc.setDrawColor(ink);
+            doc.circle(centerX, centerY, size / 2, 'S');
+        }
+        if (type === 'dot-cyan') {
+            doc.setFillColor(checkboxCyan);
+            doc.circle(centerX, centerY, size / 2, 'F');
+        }
         if (type === 'box-x') {
             doc.rect(x, y, size, size);
-            doc.line(x, y + size, x + size, y);
             doc.line(x, y, x + size, y + size);
+            doc.line(x + size, y, x, y + size);
         }
         if (type === 'x') {
-            doc.line(x, y + size, x + size, y);
             doc.line(x, y, x + size, y + size);
+            doc.line(x + size, y, x, y + size);
         }
     };
 
@@ -344,12 +354,12 @@ export default function ScopeSheetPage() {
     doc.setLineWidth(rule);
     ['Hail', 'Wind', 'Tree'].forEach((label, i) => {
         const x = damageX + 0.9 + i * damageHeaderCellW;
-        doc.vLine(x, damageHeaderY, damageHeaderY + damageRowH);
+        doc.line(x, damageHeaderY, x, damageHeaderY + damageRowH);
         doc.setTextColor(ink);
         doc.setFontSize(11).setFont('helvetica', 'normal');
         drawText(label, x + damageHeaderCellW / 2, damageHeaderY + 0.22, { align: 'center' });
     });
-    doc.vLine(damageX + 0.9, damageHeaderY, damageY);
+    doc.line(damageX + 0.9, damageHeaderY, damageX + 0.9, damageY);
 
     const damageRows = [
         { label: 'F:', hail: values.hailF, wind: values.windF, tree: values.treeF },
@@ -359,14 +369,14 @@ export default function ScopeSheetPage() {
     ];
     damageRows.forEach((row, i) => {
         const y = damageY - damageRowH * (i + 1);
-        doc.hLine(damageX, y, damageX + damageW);
+        doc.line(damageX, y, damageX + damageW, y);
         drawText(row.label, damageX + 0.1, y + 0.22);
         drawText(row.hail || '', damageX + 0.9 + damageHeaderCellW * 0.5, y + 0.22, { align: 'center' });
         drawText(row.wind || '', damageX + 0.9 + damageHeaderCellW * 1.5, y + 0.22, { align: 'center' });
         drawText(row.tree || '', damageX + 0.9 + damageHeaderCellW * 2.5, y + 0.22, { align: 'center' });
-        doc.vLine(damageX + 0.9, y, y + damageRowH);
-        doc.vLine(damageX + 0.9 + damageHeaderCellW, y, y + damageRowH);
-        doc.vLine(damageX + 0.9 + damageHeaderCellW * 2, y, y + damageRowH);
+        doc.line(damageX + 0.9, y, damageX + 0.9, y + damageRowH);
+        doc.line(damageX + 0.9 + damageHeaderCellW, y, damageX + 0.9 + damageHeaderCellW, y + damageRowH);
+        doc.line(damageX + 0.9 + damageHeaderCellW * 2, y, damageX + 0.9 + damageHeaderCellW * 2, y + damageRowH);
     });
 
     // --- MAIN LAYOUT BANDS ---
@@ -387,7 +397,7 @@ export default function ScopeSheetPage() {
     let keyItemY = keyBandY - 0.2;
     const drawPill = (x: number, y: number, iconType: any, text: string, iconSize = 0.14) => {
         drawIcon(x, y - iconSize / 2, iconType, iconSize);
-        drawText(text, x + iconSize + 0.05, y);
+        drawText(text, x + iconSize + 0.05, y + 0.04);
         return text.length * 0.05 + 0.5; // Estimate width
     };
     keyX += drawPill(keyX, keyItemY, 'dot-fill', 'Box Vent');
@@ -404,13 +414,19 @@ export default function ScopeSheetPage() {
 
     keyX = m + 0.15;
     keyItemY -= 0.2;
-    doc.setFillColor(cyan); doc.rect(keyX - 0.05, keyItemY - 0.1, 1, 0.15, 'F'); doc.setTextColor(ink);
+    doc.setFillColor(cyan);
+    doc.rect(keyX - 0.05, keyItemY - 0.1, 1, 0.15, 'F');
+    doc.setTextColor(ink);
     drawText('B = Blistering', keyX, keyItemY);
     keyX += 1.2;
-    doc.setFillColor(cyan); doc.rect(keyX - 0.05, keyItemY - 0.1, 1.4, 0.15, 'F'); doc.setTextColor(ink);
+    doc.setFillColor(cyan);
+    doc.rect(keyX - 0.05, keyItemY - 0.1, 1.4, 0.15, 'F');
+    doc.setTextColor(ink);
     drawText('M = Mechanical Damage', keyX, keyItemY);
     keyX += 1.6;
-    doc.setFillColor(cyan); doc.rect(keyX - 0.05, keyItemY - 0.1, 1.2, 0.15, 'F'); doc.setTextColor(ink);
+    doc.setFillColor(cyan);
+    doc.rect(keyX - 0.05, keyItemY - 0.1, 1.2, 0.15, 'F');
+    doc.setTextColor(ink);
     drawText('PV = Power Vent', keyX, keyItemY);
     keyX += 1.4;
     drawText('E = Exhaust Vent', keyX, keyItemY);
@@ -431,7 +447,7 @@ export default function ScopeSheetPage() {
     doc.setFontSize(10);
     diameters.forEach((d, i) => {
         const x = scaleX - 0.08 + (i * scaleColW);
-        doc.vLine(x, keyBandY - scaleH + 0.08, keyBandY);
+        doc.line(x, keyBandY - scaleH + 0.08, x, keyBandY);
         drawText(d, x + scaleColW / 2, keyBandY - scaleH + 0.25, { align: 'center' });
     });
     doc.setFontSize(8);
@@ -488,6 +504,7 @@ export default function ScopeSheetPage() {
 
     // Notes Box
     doc.rect(notesX, notesY, notesW, notesH);
+    doc.setFont('helvetica', 'normal');
     drawText(values.notes || '', notesX + 0.05, notesY + notesH - 0.1, { maxWidth: notesW - 0.1, baseline: 'top' });
 
     // Compass Rose
@@ -512,7 +529,7 @@ export default function ScopeSheetPage() {
     const chipW = 1.3;
     const drawLeftRow = (label: string, content: () => void, height = rowH) => {
         doc.setLineWidth(rule);
-        doc.hLine(m, currentLeftY - height, m + leftRail);
+        doc.line(m, currentLeftY - height, m + leftRail, currentLeftY - height);
         doc.setFillColor(yellow);
         doc.rect(m + 0.02, currentLeftY - height + 0.02, chipW, height - 0.04, 'F');
         doc.setTextColor(ink).setFontSize(10).setFont('helvetica', 'normal');
