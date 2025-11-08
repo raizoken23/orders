@@ -7,7 +7,7 @@
  * - ExtractClaimInformationOutput - The return type for the extractClaimInformation function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai} from '@/ai/genkit-server';
 import {z} from 'genkit';
 
 const ExtractClaimInformationInputSchema = z.object({

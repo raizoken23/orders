@@ -7,7 +7,7 @@
  * - AnalyzeRoofImageOutput - The return type for the analyzeRoofImage function.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai} from '@/ai/genkit-server';
 import {z} from 'genkit';
 
 const AnalyzeRoofImageInputSchema = z.object({

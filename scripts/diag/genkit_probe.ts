@@ -1,7 +1,7 @@
 // Run: tsx scripts/diag/genkit_probe.ts
 import path from "node:path";
 import fs from "node:fs";
-import { ai } from "@/ai/genkit";
+import { ai } from "@/ai/genkit-server";
 import { generateScopeSheetPdf } from "@/ai/flows/generate-scope-sheet";
 
 

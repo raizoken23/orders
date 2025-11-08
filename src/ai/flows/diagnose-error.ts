@@ -8,13 +8,13 @@
  * - DiagnoseErrorOutput - The return type for the diagnoseExecutionError function.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai } from '@/ai/genkit-server';
 import { z } from 'zod';
 import { googleAI } from '@genkit-ai/google-genai';
 import { openAI } from '@genkit-ai/compat-oai/openai';
 
 const gpt4oMini = openAI.model('gpt-4o-mini');
-const geminiFlash = googleAI.model('gemini-1.5-flash');
+const geminiFlash = googleAI.model('gemini-pro');
 
 
 const DiagnoseErrorInputSchema = z.object({

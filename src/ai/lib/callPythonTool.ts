@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import { z } from "zod";
-import { ai } from "@/ai/genkit";
+import { ai } from "@/ai/genkit-server";
 
 export const PdfResult = z.union([
   z.object({ pdfBase64: z.string().min(20) }),
