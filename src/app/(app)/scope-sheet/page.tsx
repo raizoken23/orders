@@ -21,7 +21,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Download, FileText, Terminal } from 'lucide-react'
+import { Download, FileText, Terminal, Wand2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -39,6 +39,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { diagnoseExecutionError } from '@/ai/flows/diagnose-error'
+import { Skeleton } from '@/components/ui/skeleton'
 
 
 const mockData: ScopeSheetData = {
@@ -97,6 +99,8 @@ export default function ScopeSheetPage() {
   const searchParams = useSearchParams()
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorDetails, setErrorDetails] = useState<any>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
 
 
   const form = useForm<z.infer<typeof scopeSheetSchema>>({
@@ -145,10 +149,11 @@ export default function ScopeSheetPage() {
   async function onSubmit(values: z.infer<typeof scopeSheetSchema>) {
     setIsSubmitting(true);
     setErrorDetails(null);
+    setAiAnalysis(null);
     try {
         const result = await generateScopeSheetPdf(values);
         
-        if (result.error || !result.pdfBase64) {
+        if (result.error || result.stderr || !result.pdfBase64) {
             console.error('PDF Generation Failed:', result);
             setErrorDetails(result);
             toast({
@@ -156,6 +161,23 @@ export default function ScopeSheetPage() {
                 description: 'The backend script failed to generate the PDF.',
                 variant: 'destructive',
             });
+            
+            // Kick off AI diagnosis
+            setIsDiagnosing(true);
+            try {
+              const diagnosis = await diagnoseExecutionError({
+                command: `python pdfsys/stamp_pdf.py ...`,
+                stdout: result.stdout || '',
+                stderr: result.stderr || 'No stderr output.',
+              });
+              setAiAnalysis(diagnosis.analysis);
+            } catch (diagError) {
+                console.error("Diagnosis AI failed:", diagError);
+                setAiAnalysis("The AI assistant could not analyze the error.");
+            } finally {
+                setIsDiagnosing(false);
+            }
+
             return;
         }
 
@@ -226,29 +248,39 @@ export default function ScopeSheetPage() {
 
         {errorDetails && (
             <AlertDialog open={!!errorDetails} onOpenChange={() => setErrorDetails(null)}>
-                <AlertDialogContent className="max-w-2xl">
+                <AlertDialogContent className="max-w-3xl">
                     <AlertDialogHeader>
                     <AlertDialogTitle className="flex items-center gap-2">
                         <Terminal className="text-red-500"/>
                         Backend Diagnostic Report
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                        The PDF generation script failed. Here is the output from the server, which may help diagnose the issue.
+                        The PDF generation script failed. The AI assistant is analyzing the error.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <div className="mt-2 bg-slate-900 text-white font-mono text-xs p-4 rounded-md overflow-x-auto max-h-[60vh]">
-                        <p className="font-bold text-red-400">Error:</p>
-                        <pre className="whitespace-pre-wrap">{errorDetails.stderr || 'No stderr output.'}</pre>
-
-                        <p className="mt-4 font-bold text-yellow-400">Analysis &amp; Fix:</p>
-                        <pre className="whitespace-pre-wrap">
-                            If you see a <code className='text-red-300 bg-slate-800 px-1 rounded'>command not found</code> error, it means the Python executable is not in the server's PATH. This is an environment configuration issue.
-                            <br/><br/>
-                            If the error is related to `coords.json` or a missing key, ensure all fields in the form have a corresponding entry in the `pdfsys/coords.json.sample` file.
-                        </pre>
+                    <div className="mt-2 bg-slate-950 text-white font-mono text-xs p-4 rounded-md overflow-x-auto max-h-[60vh] space-y-4">
+                        <div>
+                            <p className="font-bold text-yellow-400 mb-2 flex items-center gap-2"><Wand2 /> AI Analysis & Fix</p>
+                            {isDiagnosing ? (
+                              <div className="space-y-2">
+                                <Skeleton className="h-4 w-1/3 bg-slate-700" />
+                                <Skeleton className="h-4 w-full bg-slate-700" />
+                                <Skeleton className="h-4 w-4/5 bg-slate-700" />
+                              </div>
+                            ) : (
+                               <pre className="whitespace-pre-wrap text-sky-300 bg-slate-900 p-3 rounded-md">{aiAnalysis || "No analysis available."}</pre>
+                            )}
+                        </div>
+                        <Separator className="bg-slate-700" />
+                        <div>
+                            <p className="font-bold text-red-400 mb-1">Raw Error (stderr):</p>
+                            <pre className="whitespace-pre-wrap">{errorDetails.stderr || 'No stderr output.'}</pre>
+                        </div>
                         
-                        <p className="mt-4 font-bold text-gray-400">Full Error Object:</p>
-                        <pre className="whitespace-pre-wrap">{JSON.stringify(errorDetails, null, 2)}</pre>
+                        <div>
+                           <p className="font-bold text-gray-400 mb-1">Standard Output (stdout):</p>
+                           <pre className="whitespace-pre-wrap text-gray-500">{errorDetails.stdout || 'No stdout output.'}</pre>
+                        </div>
 
                     </div>
                     <AlertDialogFooter>
