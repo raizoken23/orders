@@ -98,8 +98,9 @@ if __name__ == "__main__":
     print("[DEBUG] stamp_pdf.py script started.")
     print(f"[DEBUG] Arguments received: {sys.argv}")
 
+    # PREFLIGHT CHECKS
     if len(sys.argv)!=5: 
-        print(f"[ERROR] Invalid number of arguments. Expected 4, got {len(sys.argv)-1}.")
+        print(f"[ERROR] PREFLIGHT FAILED: Invalid number of arguments. Expected 4, got {len(sys.argv)-1}.")
         sys.exit("usage: stamp_pdf.py <template.pdf> <coords.json> <payload.json> <out.pdf>")
     
     template, coords_path, payload_path, outp = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
@@ -111,13 +112,13 @@ if __name__ == "__main__":
 
     # File existence checks
     if not os.path.exists(template):
-        print(f"[ERROR] Template file not found at '{template}'")
+        print(f"[ERROR] PREFLIGHT FAILED: Template file not found at '{template}'")
         sys.exit(1)
     if not os.path.exists(coords_path):
-        print(f"[ERROR] Coords file not found at '{coords_path}'")
+        print(f"[ERROR] PREFLIGHT FAILED: Coords file not found at '{coords_path}'")
         sys.exit(1)
     if not os.path.exists(payload_path):
-        print(f"[ERROR] Payload file not found at '{payload_path}'")
+        print(f"[ERROR] PREFLIGHT FAILED: Payload file not found at '{payload_path}'")
         sys.exit(1)
 
     try:
@@ -145,5 +146,3 @@ if __name__ == "__main__":
         sys.exit(1)
 
     print("[DEBUG] stamp_pdf.py script finished.")
-
-    
