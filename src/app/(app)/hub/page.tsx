@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import {
   Card,
@@ -6,35 +8,50 @@ import {
   CardDescription,
   CardContent,
 } from '@/components/ui/card'
-import { Book, ShieldCheck, Video, FileText, Bot } from 'lucide-react'
+import {
+  Book,
+  ShieldCheck,
+  Video,
+  FileText,
+  Bot,
+  CircleDollarSign,
+  LayoutDashboard,
+} from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 const resources = [
+  {
+    title: 'Dashboard',
+    description: 'Return to the main application dashboard.',
+    href: '/dashboard',
+    icon: LayoutDashboard,
+  },
   {
     title: 'Training Videos',
     description:
       'Watch tutorials on how to use ScopeSheet Pro features effectively.',
-    href: '#',
+    href: '/hub/training-videos',
     icon: Video,
   },
   {
     title: 'Best Practices Guide',
     description:
       'Learn industry best practices for documenting and scoping claims.',
-    href: '#',
+    href: '/hub/best-practices',
     icon: Book,
   },
   {
     title: 'Compliance Checklists',
     description:
       'Ensure your reports meet industry and regulatory standards.',
-    href: '#',
+    href: '/hub/compliance-checklists',
     icon: ShieldCheck,
   },
   {
     title: 'AI Usage Tips',
     description:
       'Get the most out of the AI Image Analysis tool with these pro tips.',
-    href: '#',
+    href: '/hub/ai-usage-tips',
     icon: Bot,
   },
   {
@@ -44,9 +61,16 @@ const resources = [
     href: '/sub-sheets',
     icon: FileText,
   },
+  {
+    title: 'Pricing & Plans',
+    description: 'View and compare the available subscription plans.',
+    href: '/pricing',
+    icon: CircleDollarSign,
+  },
 ]
 
 export default function HubPage() {
+  const router = useRouter()
   return (
     <div className="flex flex-col gap-8">
       <div>
@@ -58,25 +82,27 @@ export default function HubPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {resources.map((resource) => (
-          <Link key={resource.title} href={resource.href}>
-            <Card className="h-full transition-all hover:shadow-md hover:-translate-y-1 cursor-pointer">
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                  <div className="bg-primary text-primary-foreground p-3 rounded-lg">
-                    <resource.icon className="size-6" />
-                  </div>
-                  <CardTitle className="font-headline">
-                    {resource.title}
-                  </CardTitle>
+          <Card
+            key={resource.title}
+            onClick={() => router.push(resource.href)}
+            className="flex flex-col h-full transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer"
+          >
+            <CardHeader>
+              <div className="flex items-center gap-4">
+                <div className="bg-primary text-primary-foreground p-3 rounded-lg">
+                  <resource.icon className="size-6" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>{resource.description}</CardDescription>
-              </CardContent>
-            </Card>
-          </Link>
+                <CardTitle className="font-headline text-lg">
+                  {resource.title}
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              <CardDescription>{resource.description}</CardDescription>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>

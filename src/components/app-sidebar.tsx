@@ -22,10 +22,9 @@ import {
   FileUp,
   Image,
   AreaChart,
-  Grid,
   Sparkles,
   FilePlus,
-  CircleDollarSign
+  CircleDollarSign,
 } from 'lucide-react'
 
 const links = [
