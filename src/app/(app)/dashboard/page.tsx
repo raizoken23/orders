@@ -5,55 +5,17 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
+  CardFooter,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import {
-  ArrowRight,
-  FileText,
-  PenSquare,
-  Scan,
-  FileUp,
-  FilePlus2,
-  BookUser,
-} from 'lucide-react'
+import { ArrowRight, FileUp } from 'lucide-react'
 
 const features = [
   {
     title: 'New Scope Sheet',
-    description: 'Start a new inspection by filling out a digital scope sheet.',
-    href: '/scope-sheet',
-    icon: FileText,
-  },
-  {
-    title: 'Import Claim Data',
-    description: 'Extract claim info from a document image using AI.',
+    description: 'Start an inspection by uploading a claim screenshot.',
     href: '/import-claim',
     icon: FileUp,
-  },
-  {
-    title: 'Create Roof Diagram',
-    description: 'Use the diagram tool to sketch roof layouts and dimensions.',
-    href: '/roof-diagram',
-    icon: PenSquare,
-  },
-  {
-    title: 'Analyze an Image',
-    description:
-      'Upload a roof image and let our AI detect potential issues.',
-    href: '/image-analysis',
-    icon: Scan,
-  },
-  {
-    title: 'Sub Sheets',
-    description: 'Create and manage detailed report templates for specific needs.',
-    href: '/sub-sheets',
-    icon: FilePlus2,
-  },
-  {
-    title: 'Investigator Hub',
-    description: 'Your one-stop shop for resources, training, and best practices.',
-    href: '/hub',
-    icon: BookUser,
   },
 ]
 
@@ -86,14 +48,14 @@ export default function DashboardPage() {
             <CardContent className="flex-grow">
               <CardDescription>{feature.description}</CardDescription>
             </CardContent>
-            <CardContent>
+            <CardFooter>
               <Button asChild variant="outline" className="w-full">
                 <Link href={feature.href}>
                   Go to {feature.title}
                   <ArrowRight className="ml-2" />
                 </Link>
               </Button>
-            </CardContent>
+            </CardFooter>
           </Card>
         ))}
       </div>
@@ -109,7 +71,7 @@ export default function DashboardPage() {
           <div className="text-center text-muted-foreground py-12">
             <p>No recent activity.</p>
             <Button asChild variant="link">
-              <Link href="/scope-sheet">Start a new scope sheet</Link>
+              <Link href="/import-claim">Start a new scope sheet</Link>
             </Button>
           </div>
         </CardContent>

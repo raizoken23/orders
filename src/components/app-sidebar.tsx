@@ -12,20 +12,13 @@ import {
   SidebarFooter,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
-import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { LogoIcon } from '@/components/icons'
 import {
   LayoutDashboard,
   FileText,
-  PenSquare,
-  Scan,
   Settings,
-  User,
   PanelLeft,
-  FilePlus2,
-  DollarSign,
-  BookUser,
   FileUp,
 } from 'lucide-react'
 
@@ -33,11 +26,6 @@ const links = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/scope-sheet', label: 'Scope Sheet', icon: FileText },
   { href: '/import-claim', label: 'Import Claim', icon: FileUp },
-  { href: '/sub-sheets', label: 'Sub Sheets', icon: FilePlus2 },
-  { href: '/roof-diagram', label: 'Roof Diagram', icon: PenSquare },
-  { href: '/image-analysis', label: 'Image Analysis', icon: Scan },
-  { href: '/pricing', label: 'Pricing', icon: DollarSign },
-  { href: '/hub', label: 'Investigator Hub', icon: BookUser },
 ]
 
 const bottomLinks = [{ href: '/settings', label: 'Settings', icon: Settings }]
