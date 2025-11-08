@@ -237,96 +237,118 @@ export default function ScopeSheetPage() {
         const pdfDoc = await PDFDocument.load(existingPdfBytes);
         const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
         const page = pdfDoc.getPages()[0];
-        const { width, height } = page.getSize();
         
+        const inch = 72;
+        const pageHeight = 11 * inch;
+
         const drawText = (text: string, x: number, y: number, size = 10) => {
             if (!text) return;
-            page.drawText(text, { x, y: height - y, size, font: helveticaFont, color: rgb(0, 0, 0) });
+            page.drawText(text, { 
+                x: x * inch, 
+                y: pageHeight - (y * inch), 
+                size, 
+                font: helveticaFont, 
+                color: rgb(0, 0, 0) 
+            });
         };
-        
+
         const drawCheck = (x: number, y: number) => {
-             page.drawText('✓', { x, y: height - y, size: 12, font: helveticaFont, color: rgb(0, 0, 0) });
+            const checkX = x * inch;
+            const checkY = pageHeight - (y * inch);
+            const size = 0.1 * inch;
+            page.drawLine({
+                start: { x: checkX, y: checkY },
+                end: { x: checkX + size, y: checkY + size},
+                thickness: 1,
+                color: rgb(0, 0, 0),
+            })
+            page.drawLine({
+                start: { x: checkX + size, y: checkY },
+                end: { x: checkX, y: checkY + size},
+                thickness: 1,
+                color: rgb(0, 0, 0),
+            })
         }
         
         // --- DATA MAPPING ---
 
         // Header
-        drawText(values.windDate || '', 450, 60);
-        drawText(values.inspector || '', 450, 97);
-        drawText(values.phone || '', 450, 119);
-        drawText(values.email || '', 450, 141);
+        drawText(values.windDate || '', 6.85, 0.6);
+        drawText(values.inspector || '', 6.85, 1.3);
+        drawText(values.phone || '', 6.85, 1.65);
+        drawText(values.email || '', 6.85, 2.0);
 
         // Damage Matrix
-        drawText(values.hailF || '', 450, 192); drawText(values.windF || '', 505, 192); drawText(values.treeF || '', 560, 192);
-        drawText(values.hailR || '', 450, 217); drawText(values.windR || '', 505, 217); drawText(values.treeR || '', 560, 217);
-        drawText(values.hailB || '', 450, 242); drawText(values.windB || '', 505, 242); drawText(values.treeB || '', 560, 242);
-        drawText(values.hailL || '', 450, 267); drawText(values.windL || '', 505, 267); drawText(values.treeL || '', 560, 267);
+        drawText(values.hailF || '', 7.05, 1.45); drawText(values.windF || '', 7.85, 1.45); drawText(values.treeF || '', 8.65, 1.45);
+        drawText(values.hailR || '', 7.05, 1.8); drawText(values.windR || '', 7.85, 1.8); drawText(values.treeR || '', 8.65, 1.8);
+        drawText(values.hailB || '', 7.05, 2.15); drawText(values.windB || '', 7.85, 2.15); drawText(values.treeB || '', 8.65, 2.15);
+        drawText(values.hailL || '', 7.05, 2.5); drawText(values.windL || '', 7.85, 2.5); drawText(values.treeL || '', 8.65, 2.5);
         
         // Shingles
-        if(values.shingleType?.includes('3 Tab')) drawCheck(50, 311);
-        if(values.shingleType?.includes('Laminate')) drawCheck(120, 311);
-        if(values.shingleType?.includes('20 Y')) drawCheck(185, 311);
-        if(values.shingleType?.includes('25 Y')) drawCheck(185, 327);
-        if(values.shingleType?.includes('30 Y')) drawCheck(185, 343);
-        if(values.shingleType?.includes('40 Y')) drawCheck(250, 311);
-        if(values.shingleType?.includes('50 Y')) drawCheck(250, 327);
-        drawText(values.otherShingle || '', 95, 345);
+        if(values.shingleType?.includes('3 Tab')) drawCheck(0.7, 2.3);
+        if(values.shingleType?.includes('Laminate')) drawCheck(1.55, 2.3);
+        if(values.shingleMake?.includes('20 Y')) drawCheck(0.7, 2.5);
+        if(values.shingleMake?.includes('25 Y')) drawCheck(1.55, 2.5);
+        if(values.shingleMake?.includes('30 Y')) drawCheck(2.4, 2.5);
+        if(values.shingleMake?.includes('40 Y')) drawCheck(0.7, 2.7);
+        if(values.shingleMake?.includes('50 Y')) drawCheck(1.55, 2.7);
+        drawText(values.otherShingle || '', 3.8, 2.7);
 
         // Ice/Water
-        if(values.iceWaterShield?.includes('Valley')) drawCheck(50, 373);
-        if(values.iceWaterShield?.includes('Eave')) drawCheck(120, 373);
-        if(values.iceWaterShield?.includes('Rake')) drawCheck(50, 389);
-        drawText(values.valleyMetalLF || '', 240, 375);
+        if(values.iceWaterShield?.includes('Valley')) drawCheck(0.7, 3.15);
+        if(values.iceWaterShield?.includes('Eave')) drawCheck(1.55, 3.15);
+        if(values.iceWaterShield?.includes('Rake')) drawCheck(0.7, 3.3);
+        drawText(values.valleyMetalLF || '', 3.5, 3.15);
         
         // Drip Edge
-        if(values.dripEdgeRadio === 'Yes') drawCheck(50, 418);
-        if(values.dripEdgeRadio === 'No') drawCheck(120, 418);
-        if(values.dripEdge?.includes('Eave')) drawCheck(185, 418);
-        if(values.dripEdge?.includes('Rake')) drawCheck(250, 418);
+        if(values.dripEdgeRadio === 'Yes') drawCheck(0.7, 3.75);
+        if(values.dripEdgeRadio === 'No') drawCheck(1.55, 3.75);
+        if(values.dripEdge?.includes('Eave')) drawCheck(2.4, 3.75);
+        if(values.dripEdge?.includes('Rake')) drawCheck(3.25, 3.75);
 
         // Left Rail
-        drawText(values.layers || '', 160, 442);
-        drawText(values.pitch || '', 160, 467);
-        if(values.boxVentsMetal) drawCheck(148, 490);
-        if(values.boxVentsPlastic) drawCheck(182, 490);
-        if(values.boxVentsMetalDamaged) drawCheck(218, 490);
-        drawText(values.ridgeVentLF || '', 160, 513);
-        drawText(values.turbineQtyLead || '', 160, 538); // This is an estimation. The PDF has no labels
-        drawText(values.hvacventQtyLead || '', 160, 560);
-        drawText(values.raindiverterQtyLead || '', 160, 582);
-        drawText(values.powerVentQtyLead || '', 160, 604);
-        drawText(values.skylightQtyLead || '', 160, 626);
-        drawText(values.satQtyLead || '', 160, 648);
-        drawText(values.pipeQty || '', 155, 672);
-        if(values.pipeLead) drawCheck(188, 670);
-        if(values.pipePlastic) drawCheck(218, 670);
-        drawText(values.guttersLF || '', 155, 695);
-        if(values.guttersSize === '5"') drawCheck(188, 693);
-        if(values.guttersSize === '6"') drawCheck(218, 693);
-        if(values.downspoutsSize === '3x4') drawCheck(148, 715);
-        if(values.downspoutsSize === '2x3') drawCheck(182, 715);
-        drawText(values.fasciaSize || '', 160, 738);
-        if(values.woodMetal === 'Wood') drawCheck(148, 760);
-        if(values.woodMetal === 'Metal') drawCheck(182, 760);
-        drawText(values.chimneyFlashing || '', 160, 783);
+        drawText(values.layers || '', 1.9, 4.05);
+        drawText(values.pitch || '', 1.9, 4.4);
+        if(values.boxVentsMetal) drawCheck(1.4, 4.75);
+        if(values.boxVentsPlastic) drawCheck(1.8, 4.75);
+        if(values.boxVentsMetalDamaged) drawCheck(2.2, 4.75);
+        drawText(values.ridgeVentLF || '', 1.9, 5.1);
+        drawText(values.turbineQtyLead || '', 1.9, 5.45);
+        drawText(values.hvacventQtyLead || '', 1.9, 5.8);
+        drawText(values.raindiverterQtyLead || '', 1.9, 6.15);
+        drawText(values.powerVentQtyLead || '', 1.9, 6.5);
+        drawText(values.skylightQtyLead || '', 1.9, 6.85);
+        drawText(values.satQtyLead || '', 1.9, 7.2);
+        drawText(values.pipeQty || '', 1.5, 7.55);
+        if(values.pipeLead) drawCheck(1.9, 7.55);
+        if(values.pipePlastic) drawCheck(2.3, 7.55);
+        drawText(values.guttersLF || '', 1.4, 7.9);
+        if(values.guttersSize === '5"') drawCheck(1.9, 7.9);
+        if(values.guttersSize === '6"') drawCheck(2.3, 7.9);
+        if(values.downspoutsSize === '3x4') drawCheck(1.9, 8.25);
+        if(values.downspoutsSize === '2x3') drawCheck(1.5, 8.25);
+        drawText(values.fasciaSize || '', 1.9, 8.6);
+        if(values.woodMetal === 'Wood') drawCheck(1.5, 8.95);
+        if(values.woodMetal === 'Metal') drawCheck(1.9, 8.95);
+        drawText(values.chimneyFlashing || '', 1.9, 9.3);
 
         // Calculations
-        drawText(values.calcA || '', 315, 313); drawText(values.calcB || '', 385, 313); drawText(values.calcC || '', 455, 313);
-        drawText(values.calcD || '', 525, 313); drawText(values.calcE || '', 315, 330); drawText(values.calcF || '', 385, 330);
-        drawText(values.calcG || '', 455, 330); drawText(values.calcH || '', 525, 330); drawText(values.calcI || '', 315, 347);
-        drawText(values.calcJ || '', 385, 347); drawText(values.calcK || '', 455, 347); drawText(values.calcL || '', 525, 347);
-        drawText(values.calcM || '', 315, 364);
+        drawText(values.calcA || '', 3.8, 4.4); drawText(values.calcB || '', 4.6, 4.4); drawText(values.calcC || '', 5.4, 4.4);
+        drawText(values.calcD || '', 6.2, 4.4); drawText(values.calcE || '', 7.0, 4.4); drawText(values.calcF || '', 7.8, 4.4);
+        drawText(values.calcG || '', 3.8, 4.75); drawText(values.calcH || '', 4.6, 4.75); drawText(values.calcI || '', 5.4, 4.75);
+        drawText(values.calcJ || '', 6.2, 4.75); drawText(values.calcK || '', 7.0, 4.75); drawText(values.calcL || '', 7.8, 4.75);
+        drawText(values.calcM || '', 3.8, 5.1);
 
-        drawText(values.eaveLF || '', 315, 390);
-        drawText(values.rakeLF || '', 315, 415);
-        if(values.aerialMeasurements1Story) drawCheck(300, 438);
-        if(values.aerialMeasurements2Story) drawCheck(355, 438);
-        drawText(values.totalSquares || '', 475, 438);
+        drawText(values.eaveLF || '', 3.8, 5.55);
+        drawText(values.rakeLF || '', 3.8, 5.9);
+        if(values.aerialMeasurements1Story) drawCheck(4.8, 6.25);
+        if(values.aerialMeasurements2Story) drawCheck(5.6, 6.25);
+        drawText(values.totalSquares || '', 6.8, 6.25);
 
         // Footer
-        drawText(values.maxHailDiameter || '', 100, 890);
-        drawText(values.stormDirection || '', 250, 890);
-        drawText(values.collateralDamage || '', 420, 890);
+        drawText(values.maxHailDiameter || '', 1.2, 9.8);
+        drawText(values.stormDirection || '', 3.7, 9.8);
+        drawText(values.collateralDamage || '', 6.2, 9.8);
         
         const notes = values.notes || '';
         const notesLines = [];
@@ -335,7 +357,7 @@ export default function ScopeSheetPage() {
             notesLines.push(notes.substring(i, i + maxLineChars));
         }
         notesLines.forEach((line, index) => {
-            drawText(line, 40, 915 + (index * 12), 10);
+            drawText(line, 0.7, 10.15 + (index * 0.18), 10);
         });
 
         // --- SAVE AND DOWNLOAD ---
@@ -1063,5 +1085,7 @@ export default function ScopeSheetPage() {
     </Form>
   )
 }
+
+    
 
     

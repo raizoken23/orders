@@ -3,3 +3,4 @@ config();
 
 import '@/ai/flows/analyze-roof-image-for-issues.ts';
 import '@/ai/flows/extract-claim-information.ts';
+import '@/ai/flows/generate-scope-sheet.ts';
