@@ -62,11 +62,11 @@ const tiers = [
 export default function PricingPage() {
   return (
     <div className="flex flex-col gap-8">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold font-headline tracking-tight">
-          Find the Perfect Plan
+      <div className="text-center max-w-4xl mx-auto">
+        <h1 className="text-4xl font-bold font-headline tracking-tight lg:text-5xl">
+          Find the Perfect Plan for Your Business
         </h1>
-        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
+        <p className="text-muted-foreground mt-4 text-lg">
           ScopeSheet Pro offers flexible pricing to fit the needs of every
           inspector, from individuals to large enterprise teams.
         </p>
@@ -76,21 +76,23 @@ export default function PricingPage() {
         {tiers.map((tier) => (
           <Card
             key={tier.name}
-            className={`flex flex-col ${
-              tier.popular ? 'border-primary shadow-lg' : ''
+            className={`flex flex-col h-full transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 ${
+              tier.popular ? 'border-2 border-primary shadow-xl' : ''
             }`}
           >
-            <CardHeader className="text-center">
+            <CardHeader className="text-center relative">
               {tier.popular && (
-                <div className="text-sm font-semibold text-primary uppercase mb-2">
-                  Most Popular
+                <div className="absolute top-0 -translate-y-1/2 w-full">
+                  <div className="inline-block px-4 py-1 text-sm font-semibold text-primary-foreground bg-primary rounded-full uppercase shadow-md">
+                    Most Popular
+                  </div>
                 </div>
               )}
-              <CardTitle className="font-headline text-2xl">
+              <CardTitle className="font-headline text-3xl pt-8">
                 {tier.name}
               </CardTitle>
               <div className="flex items-baseline justify-center gap-1">
-                <span className="text-4xl font-bold">{tier.price}</span>
+                <span className="text-5xl font-bold tracking-tighter">{tier.price}</span>
                 {tier.pricePeriod && (
                   <span className="text-muted-foreground">
                     {tier.pricePeriod}
@@ -101,8 +103,8 @@ export default function PricingPage() {
             </CardHeader>
             <CardContent className="flex-grow">
               <ul className="space-y-4">
-                {tier.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3">
+                {tier.features.map((feature, index) => (
+                  <li key={index} className="flex items-start gap-3">
                     <Check className="size-5 text-primary flex-shrink-0 mt-1" />
                     <span className="text-muted-foreground">{feature}</span>
                   </li>
@@ -112,6 +114,7 @@ export default function PricingPage() {
             <CardFooter>
               <Button
                 className="w-full"
+                size="lg"
                 variant={tier.variant as 'default' | 'outline'}
               >
                 {tier.buttonText}
