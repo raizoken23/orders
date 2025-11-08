@@ -10,12 +10,12 @@ from pypdf import PdfReader, PdfWriter
 def draw_text(c, x, y, txt, size=10, font="Helvetica", align="left", max_w=None):
     if font != "Helvetica" and font not in pdfmetrics.getRegisteredFontNames():
         font_path = f"src/pdf/fonts/{font}.ttf"
-        print(f"[DEBUG] Registering font: {font} from {font_path}")
+        # print(f"[DEBUG] Registering font: {font} from {font_path}")
         if os.path.exists(font_path):
             pdfmetrics.registerFont(TTFont(font, font_path))
             c.setFont(font, size)
         else:
-            print(f"[WARN] Font file not found: {font_path}. Falling back to Helvetica.")
+            # print(f"[WARN] Font file not found: {font_path}. Falling back to Helvetica.")
             c.setFont("Helvetica", size)
     else:
         c.setFont(font, size)
