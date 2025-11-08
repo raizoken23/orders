@@ -62,7 +62,7 @@ const scopeSheetSchema = z.object({
   valleyMetalNA: z.boolean().optional(),
   shingleMake: z.string().optional(),
   calcA: z.string().optional(),
-  calcB: z_string().optional(),
+  calcB: z.string().optional(),
   calcC: z.string().optional(),
   calcD: z.string().optional(),
   calcE: z.string().optional(),
@@ -92,7 +92,7 @@ const scopeSheetSchema = z.object({
   skylightQtyPlastic: z.string().optional(),
   satQtyLead: z.string().optional(),
   satQtyPlastic: z.string().optional(),
-pipeQtyLead: z.string().optional(),
+  pipeQtyLead: z.string().optional(),
   pipeQtyPlastic: z.string().optional(),
   guttersLF: z.string().optional(),
   guttersNA: z.boolean().optional(),
@@ -766,7 +766,7 @@ export default function ScopeSheetPage() {
     doc.text(values.stormDirection || '', notesX + 1.25, collateralY);
 
     collateralY -= 0.2;
-    docsetFont('helvetica', 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text('Collateral Damage:', notesX + 0.1, collateralY);
     doc.setFont('helvetica', 'normal');
     
