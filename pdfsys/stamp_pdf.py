@@ -8,6 +8,10 @@ from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from pypdf import PdfReader, PdfWriter
+import traceback
+
+def _err(code, msg, detail=None):
+    return {"error": {"code": code, "message": msg, "detail": detail}}
 
 # ---------- drawing helpers ----------
 def _draw_text(c, x_in, y_in, txt, size=10, font="Helvetica", align="left", max_w_pt=None):
@@ -74,56 +78,50 @@ def _render_overlay(coords: Dict[str, Any], payload: Dict[str, Any]) -> PdfReade
     c.showPage(); c.save(); buf.seek(0)
     return PdfReader(buf)
 
-def _merge_bytes(template_pdf_path: str, overlay_reader: PdfReader) -> bytes:
-    base = PdfReader(template_pdf_path)
-    w = PdfWriter()
-    
-    # Ensure there's a page to merge onto
+def _merge(template: str, overlay: PdfReader) -> bytes:
+    base = PdfReader(template); w = PdfWriter()
     if not base.pages:
         raise ValueError("Template PDF has no pages.")
-    
-    base.pages[0].merge_page(overlay_reader.pages[0])
-
-    for page in base.pages:
-        w.add_page(page)
-
+    base.pages[0].merge_page(overlay.pages[0])
+    for p in base.pages:
+        w.add_page(p)
     out = io.BytesIO(); w.write(out); return out.getvalue()
 
 # ---------- REQUIRED ENTRYPOINT ----------
-def run(event: Dict[str, Any]) -> Dict[str, Union[str, None]]:
-    """
-    Required entrypoint for your runner.
-
-    event = {
-      "template": "public/satellite_base.pdf" | absolute path,
-      "coords": { ... } | path to JSON file,
-      "payload": { ... }                      # form data
-    }
-    Returns: {"pdfBase64": "<base64 string>"}
-    """
+def run(event: Dict[str,Any]) -> Dict[str,str]:
+    # contract check
     try:
         template = event["template"]
-        coords_arg: Union[str, Dict[str, Any]] = event["coords"]
-        payload: Dict[str, Any] = event.get("payload", {})
-
-        if isinstance(coords_arg, str):
-            with open(coords_arg, "r", encoding="utf-8") as f:
-                coords = json.load(f)
-        else:
-            coords = coords_arg
-
-        overlay = _render_overlay(coords, payload)
-        pdf_bytes = _merge_bytes(template, overlay)
-        b64_string = base64.b64encode(pdf_bytes).decode("ascii")
-        return {"pdfBase64": b64_string}
+        coords_arg: Union[str,Dict[str,Any]] = event["coords"]
+        payload: Dict[str,Any] = event.get("payload", {})
     except Exception as e:
-        import traceback
-        return {"error": str(e), "traceback": traceback.format_exc()}
+        return _err("CONTRACT_ERROR", "Missing required keys template|coords|payload", str(e))
+    
+    if not os.path.exists(template):
+        return _err("TEMPLATE_NOT_FOUND", f"Template file not found at path: {template}")
+    
+    coords = None
+    if isinstance(coords_arg, str):
+        if not os.path.exists(coords_arg): 
+            return _err("COORDS_NOT_FOUND", f"Coordinates file not found at path: {coords_arg}")
+        with open(coords_arg,"r",encoding="utf-8") as f:
+            coords = json.load(f)
+    else:
+        coords = coords_arg
+        
+    if not coords:
+        return _err("COORDS_INVALID", "Coordinates were not loaded or provided.")
 
+    try:
+        overlay = _render_overlay(coords, payload)
+        pdf_bytes = _merge(template, overlay)
+        return {"pdfBase64": base64.b64encode(pdf_bytes).decode("ascii")}
+    except Exception as e:
+        return _err("RENDER_FAILURE", "Exception during PDF render/merge", traceback.format_exc())
 
-# Optional aliases for other platforms
-handler = run  # AWS-style
-main = run     # some tools expect 'main'
+# common aliases some platforms look for
+handler = run
+main = run
 
 # ---------- CLI for local testing ----------
 if __name__ == "__main__":
@@ -134,15 +132,20 @@ if __name__ == "__main__":
     ap.add_argument("--payload", required=True, help="JSON file with data")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
+    
+    payload = {}
     with open(a.payload, "r", encoding="utf-8") as f:
         payload = json.load(f)
+        
     res = run({"template": a.template, "coords": a.coords, "payload": payload})
-    if res.get("pdfBase64"):
-      with open(a.out, "wb") as f:
-          f.write(base64.b64decode(res["pdfBase64"]))
-      print(f"Wrote {a.out}")
+    
+    if "pdfBase64" in res:
+        with open(a.out, "wb") as f:
+            f.write(base64.b64decode(res["pdfBase64"]))
+        print(f"[SUCCESS] Wrote stamped PDF to {a.out}")
     else:
-      print("Failed to generate PDF.")
-      print(res)
+        print("[ERROR] PDF generation failed.")
+        print(json.dumps(res, indent=2))
+        raise SystemExit(1)
 
     

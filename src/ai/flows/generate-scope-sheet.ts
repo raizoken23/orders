@@ -12,30 +12,33 @@ import { scopeSheetSchema } from '@/lib/schema/scope-sheet';
 import path from 'path';
 import fs from 'fs';
 
-// Define the output schema to expect a base64 string or an error
-const GenerateScopeSheetOutputSchema = z.object({
+// Define the output schema to expect a base64 string or a structured error
+const PythonOutputSchema = z.object({
     pdfBase64: z.string().optional(),
-    error: z.string().optional(),
-    traceback: z.string().optional(),
+    error: z.object({
+        code: z.string(),
+        message: z.string(),
+        detail: z.string().optional().nullable(),
+    }).optional(),
 });
+
 
 const generateScopeSheetFlow = ai.defineFlow(
     {
         name: 'generateScopeSheetFlow',
         inputSchema: scopeSheetSchema,
-        outputSchema: GenerateScopeSheetOutputSchema,
+        outputSchema: PythonOutputSchema,
     },
     async (data) => {
-        // Resolve paths relative to the project root
+        // Define absolute paths for reliability
         const templatePath = path.resolve(process.cwd(), 'public/satellite_base.pdf');
         const coordsPath = path.resolve(process.cwd(), 'pdfsys/coords.json.sample');
         const scriptPath = path.resolve(process.cwd(), 'pdfsys/stamp_pdf.py');
 
         try {
-            // Log the paths for debugging
-            console.log(`[generateScopeSheetFlow] Template Path: ${templatePath}`);
-            console.log(`[generateScopeSheetFlow] Coords Path: ${coordsPath}`);
-            console.log(`[generateScopeSheetFlow] Script Path: ${scriptPath}`);
+            console.log(`[generateScopeSheetFlow] Executing Python script: ${scriptPath}`);
+            console.log(`[generateScopeSheetFlow] Using template: ${templatePath}`);
+            console.log(`[generateScopeSheetFlow] Using coords: ${coordsPath}`);
 
             // The Genkit Python runner needs the function name `run` to be specified
             const { output, error } = await ai.run({
@@ -48,30 +51,30 @@ const generateScopeSheetFlow = ai.defineFlow(
                     payload: data,
                 },
             });
-
+            
             if (error) {
-                console.error('[generateScopeSheetFlow] ai.run reported an error:', error);
-                return { error: error.message, stdout: '', stderr: error.stack || '' };
+                 console.error('[generateScopeSheetFlow] ai.run reported an execution error:', error);
+                 return { error: { code: 'AI_RUN_EXECUTION_ERROR', message: error.message, detail: error.stack || 'No stack trace' }};
             }
             
-            // The python script now returns a JSON object with either `pdfBase64` or `error`
-            const result = output as z.infer<typeof GenerateScopeSheetOutputSchema>;
+            const result = output as z.infer<typeof PythonOutputSchema>;
 
             if (result.error) {
-                 console.error(`[generateScopeSheetFlow] Python script returned an error: ${result.error}`);
-                 console.error(`[generateScopeSheetFlow] Python Traceback: ${result.traceback}`);
-                 return { error: result.error, stderr: result.traceback, stdout: '' };
+                 console.error(`[generateScopeSheetFlow] Python script returned an error: ${result.error.message}`);
+                 console.error(`[generateScopeSheetFlow] Python Traceback: ${result.error.detail}`);
+                 return { error: result.error };
             }
 
             return { pdfBase64: result.pdfBase64 };
 
         } catch (execError: any) {
-            console.error(`[generateScopeSheetFlow] Tool execution failed: ${execError.message}`);
-            // Provide a structured error response
+            console.error(`[generateScopeSheetFlow] An unexpected exception occurred: ${execError.message}`);
             return {
-                error: `Tool execution failed: ${execError.message}`,
-                stdout: execError.stdout || '',
-                stderr: execError.stderr || execError.stack || 'No stack trace available',
+                error: {
+                    code: 'UNEXPECTED_FLOW_EXCEPTION',
+                    message: execError.message,
+                    detail: execError.stack || 'No stack trace available',
+                }
             };
         }
     }
@@ -79,12 +82,18 @@ const generateScopeSheetFlow = ai.defineFlow(
 
 export async function generateScopeSheetPdf(data: z.infer<typeof scopeSheetSchema>) {
     const result = await generateScopeSheetFlow(data);
-    // Ensure the return type matches what the frontend expects
+    
+    // Adapt the structured error for the frontend
+    if (result.error) {
+        return {
+            error: result.error.message,
+            stderr: result.error.detail || `Error Code: ${result.error.code}`,
+            stdout: `Python script failed with code: ${result.error.code}. See stderr for details.`,
+        };
+    }
+
     return {
         pdfBase64: result.pdfBase64,
-        error: result.error,
-        stdout: '', // stdout is less relevant now as logic is in python script
-        stderr: result.error ? (result.traceback || result.error) : undefined
     };
 }
 
