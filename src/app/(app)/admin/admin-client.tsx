@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -172,7 +172,12 @@ function StripeForm() {
 }
 
 function StripeTest() {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const [webhookUrl, setWebhookUrl] = useState('');
+
+    useEffect(() => {
+        setWebhookUrl(`${window.location.origin}/api/pay/webhook`);
+    }, []);
+
     return (
         <div className="pt-2">
         <Button variant="secondary" onClick={async ()=>{
@@ -180,15 +185,22 @@ function StripeTest() {
             body: JSON.stringify({ amount: 500, description: 'ScopeSheet Test Charge'}) });
             const { url } = await r.json(); window.location.href = url;
         }}>Create $5 Test Checkout</Button>
-        <div className="text-xs text-muted-foreground mt-2">Webhook Endpoint: <code className="bg-muted px-1 py-0.5 rounded">{origin}/api/pay/webhook</code></div>
+        <div className="text-xs text-muted-foreground mt-2">Webhook Endpoint: <code className="bg-muted px-1 py-0.5 rounded">{webhookUrl}</code></div>
         </div>
     );
 }
 
 function QboForm() {
-  const [clientId, setId] = useState(''); const [clientSecret, setSec] = useState(''); const [redirectUrl, setRU] = useState('');
+  const [clientId, setId] = useState('');
+  const [clientSecret, setSec] = useState('');
+  const [redirectUrl, setRU] = useState('');
   const [msg, setMsg] = useState('');
-  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const [origin, setOrigin] = useState('');
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
 
   return (
     <form onSubmit={async e=>{
@@ -220,5 +232,7 @@ function QboConnect() {
     </div>
   );
 }
+
+    
 
     
