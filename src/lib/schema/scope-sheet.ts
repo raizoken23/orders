@@ -98,6 +98,7 @@ export const scopeSheetSchema = z.object({
   otherVentE: z.boolean().optional(),
   otherExhaustVent: z.boolean().optional(),
   woodMetal: z.string().optional(),
+  accessories: z.array(z.string()).optional(),
 });
 
 export type ScopeSheetData = z.infer<typeof scopeSheetSchema>;

@@ -8,11 +8,19 @@ import { Button } from '@/components/ui/button'
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import {
   Card,
@@ -62,7 +70,8 @@ const demoData: ScopeSheetData = {
       layers: '1',
       pitch: '7/12',
       totalSquares: '32',
-      notes: 'This is a test PDF generated with sample data to demonstrate the automation capabilities.'
+      notes: 'This is a test PDF generated with sample data to demonstrate the automation capabilities.',
+      accessories: ['Solar Tube'],
 };
 
 
@@ -104,6 +113,7 @@ export default function ScopeSheetPage() {
       ridgeVentMetalDamaged: false, ridgeVentLF: '', ridgeVentPlastic: false,
       otherSolar: false, otherVentE: false, otherExhaustVent: false,
       woodMetal: '',
+      accessories: [],
     },
   })
 
@@ -910,6 +920,33 @@ export default function ScopeSheetPage() {
                         <FormField control={form.control} name="chimneyOther" render={({ field }) => (
                             <FormItem><FormLabel>Other</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
                         )}/>
+                        <Separator/>
+                        <FormField
+                          control={form.control}
+                          name="accessories"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Accessories</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={Array.isArray(field.value) ? field.value[0] : field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select accessories" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="Solar Tube">Solar Tube</SelectItem>
+                                  <SelectItem value="Power Vent">Power Vent</SelectItem>
+                                  <SelectItem value="Skylight">Skylight</SelectItem>
+                                  <SelectItem value="Satellite Dish">Satellite Dish</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                Select any additional roof accessories.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                      </div>
                  </div>
             </CardContent>
