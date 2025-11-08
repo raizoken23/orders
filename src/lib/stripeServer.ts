@@ -7,7 +7,7 @@ import { getSecret } from './secretStore';
 
 type StripeSecrets = { secretKey: string; publishableKey?: string; webhookSecret?: string };
 
-export async function getStripe() {
+async function getStripe() {
   const s = (await getSecret<StripeSecrets>('stripe')) || {};
   const key = s.secretKey || process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error('STRIPE_SECRET_KEY missing');
