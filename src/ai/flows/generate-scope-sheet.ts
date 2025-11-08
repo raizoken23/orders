@@ -40,9 +40,8 @@ const stampPdfTool = ai.defineTool(
     }),
   },
   async (input) => {
-    // Determine the python command based on the environment
-    const pythonCmd = process.env.GENKIT_ENV === 'dev' ? 'python3' : 'python';
-    const command = `${pythonCmd} ${input.scriptPath} ${input.templatePath} ${input.coordsPath} ${input.payloadPath} ${input.outputPath}`;
+    // Always use 'python'. The Genkit environment ensures this is available.
+    const command = `python ${input.scriptPath} ${input.templatePath} ${input.coordsPath} ${input.payloadPath} ${input.outputPath}`;
     console.log(`[stampPdfTool] Executing command: ${command}`);
     const { stdout, stderr } = await execAsync(command);
     return { stdout, stderr };
