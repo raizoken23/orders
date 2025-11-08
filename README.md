@@ -11,6 +11,7 @@ This project was built in Firebase Studio.
 - [How It Works](#how-it-works)
   - [AI Functionality](#ai-functionality)
   - [PDF Generation Architecture](#pdf-generation-architecture)
+  - [Roles & Permissions](#roles--permissions)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
 - [Diagnostics & Testing](#diagnostics--testing)
@@ -22,6 +23,7 @@ This project was built in Firebase Studio.
 - **AI Image Analysis:** Upload photos of a roof, and the AI will analyze them for potential damage, wear, and structural issues.
 - **Pixel-Perfect PDF Generation:** Generates a professional, downloadable PDF scope sheet by stamping the collected data onto a master PDF template, ensuring perfect formatting every time.
 - **Built-in Diagnostics:** Comes with a full suite of diagnostic tools and preflight checks to ensure the PDF generation subsystem is operational.
+- **Secure Admin Dashboard**: A server-side administrative section for securely managing API keys and third-party integrations like Stripe and QuickBooks.
 
 ## Tech Stack
 
@@ -33,6 +35,7 @@ This project was built in Firebase Studio.
 - **Form Management:** [React Hook Form](https://react-hook-form.com/)
 - **Schema Validation:** [Zod](https://zod.dev/)
 - **PDF Generation:** Server-side execution of a Python script using `pypdf` and `reportlab`.
+- **Integrations**: [Stripe](https://stripe.com/) for payments, [QuickBooks Online](https://developer.intuit.com/app/developer/qbo/docs/overview) for accounting.
 - **Testing:** [Vitest](https://vitest.dev/) for TypeScript tests and [Pytest](https://pytest.org/) for Python tests.
 
 ## How It Works
@@ -59,6 +62,19 @@ The PDF generation is a robust, multi-step, server-side process designed for rel
 7.  **Download:** The server action sends the base64 string back to the client, where it's converted into a Blob and triggered as a file download.
 
 This server-centric approach guarantees that the final PDF is a pixel-perfect match to the template, regardless of the user's browser or device.
+
+### Roles & Permissions
+
+The application is designed with a 5-tiered Role-Based Access Control (RBAC) system to support scaling from individual inspectors to large teams. This ensures users only have access to the features and data relevant to their responsibilities.
+
+| Role              | Description                                                                                                                                                             | Key Permissions                                                                                                                                                                                                                         |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. Viewer**     | A read-only user who can view finalized reports but cannot create or edit them. Ideal for external stakeholders like homeowners or insurance agents.                     | - View and download completed PDF reports shared with them. <br/> - Cannot create, edit, or delete any data.                                                                                                                          |
+| **2. Field Inspector** | The primary user of the application. An individual inspector responsible for conducting inspections and creating scope sheets for their own assignments.                 | - Create, edit, and manage their own scope sheets. <br/> - Upload images for AI analysis. <br/> - Generate and download PDF reports for their own inspections. <br/> - View their own activity history.                                     |
+| **3. Team Lead** | A user responsible for a small team of inspectors. They can review and manage the work of their team members to ensure quality and consistency.                        | - All permissions of a Field Inspector. <br/> - View and edit scope sheets created by inspectors on their team. <br/> - Approve or reject submitted reports. <br/> - Access a team-specific dashboard to monitor workload and progress. |
+| **4. Manager**    | A mid-level manager who oversees multiple teams or a specific region. They focus on operational oversight, user management, and performance analytics.                    | - All permissions of a Team Lead. <br/> - Manage user accounts (invite, assign roles, deactivate) for their assigned teams. <br/> - View cross-team analytics and performance reports. <br/> - Reassign inspections between teams.          |
+| **5. Admin**      | The application owner or superuser with unrestricted access to the entire system. Responsible for global configuration, security, and billing.                           | - All permissions of a Manager. <br/> - Access the Admin dashboard to manage integrations (Stripe, QuickBooks). <br/> - Set application-wide security policies (e.g., restrict sign-ups by email domain). <br/> - Manage all user accounts.  |
+
 
 ## Project Structure
 
@@ -98,6 +114,7 @@ This server-centric approach guarantees that the final PDF is a pixel-perfect ma
 
 - Node.js & npm
 - Python 3.x
+- A 32-byte Base64 encoded key for `SECRETBOX_KEY_BASE64`
 
 ### Installation
 
@@ -106,9 +123,11 @@ This server-centric approach guarantees that the final PDF is a pixel-perfect ma
     ```bash
     npm install
     ```
-3.  Set up your environment variables. Create a `.env` file in the root and add your API key:
+3.  Set up your environment variables. Create a `.env` file in the root and add your keys:
     ```
+    SECRETBOX_KEY_BASE64=your_32_byte_base64_encoded_key
     GEMINI_API_KEY=your_google_api_key
+    APP_URL=http://localhost:9002
     ```
 4.  Run the development server:
     ```bash
