@@ -22,7 +22,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Download, File, Terminal, Wand2 } from 'lucide-react'
+import { Download, File, Terminal, Wand2, TestTube } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -43,11 +43,34 @@ import {
 import { diagnoseExecutionError } from '@/ai/flows/diagnose-error'
 import { Skeleton } from '@/components/ui/skeleton'
 
+const demoData: ScopeSheetData = {
+      claimNumber: 'CLM-DEMO-98765',
+      policyNumber: 'POL-DEMO-54321',
+      clientName: 'Demo User',
+      clientEmail: 'demo.user@example.com',
+      clientPhone: '(555) 555-5555',
+      propertyAddress: '123 Demo Lane, Testville, USA 54321',
+      dateOfLoss: '2024-01-01',
+      inspector: 'P Yarborough',
+      phone: '310-357-1399',
+      email: 'pyarborough@laddernow.com',
+      shingleType: ['Laminate'],
+      shingleMake: ['30 Y'],
+      iceWaterShield: ['Valley','Eave'],
+      dripEdgeRadio: 'Yes',
+      dripEdge: ['Eave','Rake'],
+      layers: '1',
+      pitch: '7/12',
+      totalSquares: '32',
+      notes: 'This is a test PDF generated with sample data to demonstrate the automation capabilities.'
+};
+
 
 export default function ScopeSheetPage() {
   const { toast } = useToast()
   const searchParams = useSearchParams()
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDemoSubmitting, setIsDemoSubmitting] = useState(false);
   const [errorDetails, setErrorDetails] = useState<any>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
@@ -105,8 +128,8 @@ export default function ScopeSheetPage() {
   }, [searchParams, form]);
 
 
-  async function onSubmit(values: z.infer<typeof scopeSheetSchema>) {
-    setIsSubmitting(true);
+  const handlePdfGeneration = async (values: z.infer<typeof scopeSheetSchema>, setSubmitting: (isSubmitting: boolean) => void) => {
+    setSubmitting(true);
     setErrorDetails(null);
     setAiAnalysis(null);
     try {
@@ -174,9 +197,18 @@ export default function ScopeSheetPage() {
             variant: 'destructive',
         });
     } finally {
-        setIsSubmitting(false);
+        setSubmitting(false);
     }
   }
+
+  const onSubmit = (values: z.infer<typeof scopeSheetSchema>) => {
+    handlePdfGeneration(values, setIsSubmitting);
+  }
+  
+  const onGenerateDemo = () => {
+      handlePdfGeneration(demoData, setIsDemoSubmitting);
+  }
+
 
   return (
     <Form {...form}>
@@ -196,6 +228,10 @@ export default function ScopeSheetPage() {
                     <File className="mr-2" />
                     Download Template
                 </a>
+            </Button>
+            <Button type="button" variant="secondary" onClick={onGenerateDemo} disabled={isDemoSubmitting}>
+                <TestTube className="mr-2" />
+                {isDemoSubmitting ? 'Generating...' : 'Generate Demo PDF'}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 <Download className="mr-2" />
@@ -917,5 +953,3 @@ export default function ScopeSheetPage() {
     </Form>
   )
 }
-
-    
