@@ -2,114 +2,12 @@
 /**
  * @fileOverview A flow that generates a PDF scope sheet by stamping form data onto a template.
  *
- * - generateScopeSheet - The function that handles the PDF generation.
- * - scopeSheetSchema - The Zod schema for the form data input.
+ * - generateScopeSheetPdf - The function that handles the PDF generation.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-
-export const scopeSheetSchema = z.object({
-  claimNumber: z.string().min(1, 'Claim number is required.'),
-  policyNumber: z.string().min(1, 'Policy number is required.'),
-  clientName: z.string().min(1, 'Client name is required.'),
-  clientEmail: z.string().email('Invalid email address.'),
-  clientPhone: z.string().min(1, 'Phone number is required.'),
-  propertyAddress: z.string().min(1, 'Property address is required.'),
-  dateOfLoss: z.string().min(1, 'Date of loss is required.'),
-  hailF: z.string().optional(),
-  hailR: z.string().optional(),
-  hailB: z.string().optional(),
-  hailL: z.string().optional(),
-  windF: z.string().optional(),
-  windR: z.string().optional(),
-  windB: z.string().optional(),
-  windL: z.string().optional(),
-  treeF: z.string().optional(),
-  treeR: z.string().optional(),
-  treeB: z.string().optional(),
-  treeL: z.string().optional(),
-  windDate: z.string().optional(),
-  ladderNow: z.boolean().optional(),
-  inspector: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().optional(),
-  eaveLF: z.string().optional(),
-  eaveNA: z.boolean().optional(),
-  shingleType: z.array(z.string()).optional(),
-  otherShingle: z.string().optional(),
-  iceWaterShield: z.array(z.string()).optional(),
-  dripEdge: z.array(z.string()).optional(),
-  dripEdgeRadio: z.string().optional(),
-  layers: z.string().optional(),
-  pitch: z.string().optional(),
-  valleyMetalLF: z.string().optional(),
-  valleyMetalNA: z.boolean().optional(),
-  shingleMake: z.array(z.string()).optional(),
-  calcA: z.string().optional(),
-  calcB: z.string().optional(),
-  calcC: z.string().optional(),
-  calcD: z.string().optional(),
-  calcE: z.string().optional(),
-  calcF: z.string().optional(),
-  calcG: z.string().optional(),
-  calcH: z.string().optional(),
-  calcK: z.string().optional(),
-  calcL: z.string().optional(),
-  calcM: z.string().optional(),
-  calcI: z.string().optional(),
-  calcJ: z.string().optional(),
-  rakeLF: z.string().optional(),
-  rakeNA: z.boolean().optional(),
-  totalSquares: z.string().optional(),
-  aerialMeasurements1Story: z.boolean().optional(),
-  aerialMeasurements2Story: z.boolean().optional(),
-  yesNoEaveRake: z.string().optional(),
-  turbineQtyLead: z.string().optional(),
-  turbineQtyPlastic: z.string().optional(),
-  hvacventQtyLead: z.string().optional(),
-  hvacventQtyPlastic: z.string().optional(),
-  raindiverterQtyLead: z.string().optional(),
-  raindiverterQtyPlastic: z.string().optional(),
-  powerVentQtyLead: z.string().optional(),
-  powerVentQtyPlastic: z.string().optional(),
-  skylightQtyLead: z.string().optional(),
-  skylightQtyPlastic: z.string().optional(),
-  satQtyLead: z.string().optional(),
-  satQtyPlastic: z.string().optional(),
-  pipeQty: z.string().optional(),
-  pipeLead: z.boolean().optional(),
-  pipePlastic: z.boolean().optional(),
-  guttersLF: z.string().optional(),
-  guttersNA: z.boolean().optional(),
-  guttersSize: z.string().optional(),
-  downspoutsLF: z.string().optional(),
-  downspoutsSize: z.string().optional(),
-  fasciaSize: z.string().optional(),
-  fasciaLF: z.string().optional(),
-  fasciaNA: z.boolean().optional(),
-  fasciaType: z.string().optional(),
-  chimneyFlashing: z.string().optional(),
-  chimneyOther: z.string().optional(),
-  maxHailDiameter: z.string().optional(),
-  stormDirection: z.string().optional(),
-  collateralDamage: z.string().optional(),
-  notes: z.string().optional(),
-  boxVentsQtyLead: z.string().optional(),
-  boxVentsQtyPlastic: z.string().optional(),
-  boxVentsMetal: z.boolean().optional(),
-  boxVentsPlastic: z.boolean().optional(),
-  boxVentsMetalDamaged: z.boolean().optional(),
-  ridgeVentMetalDamaged: z.boolean().optional(),
-  ridgeVentLF: z.string().optional(),
-  ridgeVentPlastic: z.boolean().optional(),
-  otherSolar: z.boolean().optional(),
-  otherVentE: z.boolean().optional(),
-  otherExhaustVent: z.boolean().optional(),
-  woodMetal: z.string().optional(),
-});
-
-export type ScopeSheetData = z.infer<typeof scopeSheetSchema>;
+import { scopeSheetSchema } from '@/lib/schema/scope-sheet';
 
 const stampPdfTool = ai.defineTool(
     {
@@ -304,9 +202,9 @@ print(json.dumps({'pdfBase64': pdf_base64}))
     },
   );
 
-export const generateScopeSheet = ai.defineFlow(
+const generateScopeSheetFlow = ai.defineFlow(
     {
-        name: 'generateScopeSheet',
+        name: 'generateScopeSheetFlow',
         inputSchema: scopeSheetSchema,
         outputSchema: z.object({
             pdfBase64: z.string(),
@@ -316,3 +214,7 @@ export const generateScopeSheet = ai.defineFlow(
         return stampPdfTool(data);
     }
 );
+
+export async function generateScopeSheetPdf(data: z.infer<typeof scopeSheetSchema>) {
+    return await generateScopeSheetFlow(data);
+}

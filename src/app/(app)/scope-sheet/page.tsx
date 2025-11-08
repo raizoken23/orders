@@ -28,9 +28,8 @@ import { useEffect } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { generateScopeSheet, scopeSheetSchema } from '@/ai/flows/generate-scope-sheet'
-
-type ScopeSheetData = z.infer<typeof scopeSheetSchema>;
+import { generateScopeSheetPdf } from '@/ai/flows/generate-scope-sheet'
+import { scopeSheetSchema, type ScopeSheetData } from '@/lib/schema/scope-sheet'
 
 const mockData: ScopeSheetData = {
     claimNumber: 'DEMO-12345',
@@ -132,7 +131,7 @@ export default function ScopeSheetPage() {
 
   async function onSubmit(values: z.infer<typeof scopeSheetSchema>) {
     try {
-        const { pdfBase64 } = await generateScopeSheet(values);
+        const { pdfBase64 } = await generateScopeSheetPdf(values);
         
         const byteCharacters = atob(pdfBase64);
         const byteNumbers = new Array(byteCharacters.length);
