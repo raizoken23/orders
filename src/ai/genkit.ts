@@ -1,4 +1,4 @@
-import {genkit, configureGenkit} from 'genkit';
+import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
 import OpenAI from 'openai';
 
@@ -9,9 +9,6 @@ export const ai = genkit({
   enableTracingAndMetrics: true,
 });
 
-// This is a secondary configuration used by standalone scripts like the doctor.
-configureGenkit({
-  plugins: [googleAI()],
-  logLevel: 'debug',
-  enableTracingAndMetrics: true,
-});
+// The configureGenkit function is deprecated in recent versions of Genkit.
+// The primary `ai` export above is now used by all parts of the application,
+// including standalone scripts.
