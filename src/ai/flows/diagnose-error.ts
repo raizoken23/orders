@@ -13,7 +13,7 @@ import { googleAI } from '@genkit-ai/google-genai';
 import { openAI } from '@genkit-ai/compat-oai/openai';
 
 const gpt4oMini = openAI.model('gpt-4o-mini');
-const geminiPro = googleAI.model('gemini-pro');
+const geminiFlash = googleAI.model('gemini-1.5-flash-latest');
 
 
 const DiagnoseErrorInputSchema = z.object({
@@ -65,7 +65,7 @@ const diagnoseExecutionErrorFlow = ai.defineFlow(
         outputSchema: DiagnoseErrorOutputSchema,
     },
     async (input) => {
-        const model = input.provider === 'openai' ? gpt4oMini : geminiPro;
+        const model = input.provider === 'openai' ? gpt4oMini : geminiFlash;
 
         const { output } = await prompt(input, { model });
         return output!;
