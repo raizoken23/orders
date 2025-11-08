@@ -8,7 +8,7 @@ type StripeSecrets = { secretKey: string; publishableKey?: string; webhookSecret
 export async function getStripeInstance() {
   const fromStore = (await getSecret<StripeSecrets>('stripe')) || {};
   const secret = fromStore.secretKey || process.env.STRIPE_SECRET_KEY;
-  if (!secret) throw new Error('STRIPE_SECRET_KEY missing');
+  if (!secret) throw new Error('STRIPE_SECRET_KEY missing. Please configure it in the Admin Dashboard.');
   return new Stripe(secret, { apiVersion: '2024-06-20' });
 }
 
