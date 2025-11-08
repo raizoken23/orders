@@ -70,8 +70,41 @@ const demoData: ScopeSheetData = {
       layers: '1',
       pitch: '7/12',
       totalSquares: '32',
-      notes: 'This is a test PDF generated with sample data to demonstrate the automation capabilities.',
+      notes: 'This is a test PDF generated with sample data to demonstrate the automation capabilities. All fields have been filled to ensure proper mapping and alignment on the final document.',
       accessories: ['Solar Tube'],
+      eaveLF: '150',
+      otherShingle: 'Architectural',
+      valleyMetalLF: '60',
+      calcA: '10', calcB: '12', calcC: '10', calcD: '12',
+      calcE: '8', calcF: '15', calcG: '8', calcH: '15',
+      calcI: '20', calcJ: '25', calcK: '5', calcL: '5', calcM: '5',
+      rakeLF: '180',
+      aerialMeasurements2Story: true,
+      boxVentsQtyLead: '2',
+      boxVentsQtyPlastic: '2',
+      turbineQtyLead: '1',
+      turbineQtyPlastic: '1',
+      hvacventQtyLead: '3',
+      hvacventQtyPlastic: '0',
+      raindiverterQtyLead: '4',
+      raindiverterQtyPlastic: '0',
+      powerVentQtyLead: '1',
+      powerVentQtyPlastic: '0',
+      skylightQtyLead: '2',
+      skylightQtyPlastic: '0',
+      satQtyLead: '1',
+      satQtyPlastic: '0',
+      pipeQty: '4',
+      pipeLead: true,
+      ridgeVentLF: '40',
+      ridgeVentPlastic: true,
+      guttersLF: '150',
+      guttersSize: '6"',
+      downspoutsLF: '80',
+      downspoutsSize: '3x4',
+      fasciaLF: '150',
+      chimneyFlashing: 'Step',
+      chimneyOther: 'Cricket',
 };
 
 
@@ -927,7 +960,7 @@ export default function ScopeSheetPage() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Accessories</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={Array.isArray(field.value) ? field.value[0] : field.value}>
+                              <Select onValueChange={(value) => field.onChange(value ? [value] : [])} defaultValue={Array.isArray(field.value) ? field.value[0] : field.value}>
                                 <FormControl>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select accessories" />
@@ -1004,3 +1037,5 @@ export default function ScopeSheetPage() {
     </Form>
   )
 }
+
+    
