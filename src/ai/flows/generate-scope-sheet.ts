@@ -19,9 +19,11 @@ const GenerateScopeSheetOutputSchema = z.object({
     stderr: z.string().optional(),
 });
 
-const generateScopeSheetFlow = ai.defineFlow(
+// Define a specific tool for running the PDF stamping script
+const stampPdfTool = ai.defineTool(
     {
-        name: 'generateScopeSheetFlow',
+        name: 'stampPdfTool',
+        description: 'Runs a python script to stamp data onto a PDF template.',
         inputSchema: scopeSheetSchema,
         outputSchema: GenerateScopeSheetOutputSchema,
     },
@@ -30,7 +32,6 @@ const generateScopeSheetFlow = ai.defineFlow(
         const templatePath = path.resolve(process.cwd(), 'public/satellite_base.pdf');
         const scriptPath = path.resolve(process.cwd(), 'pdfsys/stamp_pdf.py');
 
-        // Create temporary files for payload and output
         const tempDir = os.tmpdir();
         const uniqueId = Date.now();
         const payloadPath = path.join(tempDir, `payload-${uniqueId}.json`);
@@ -40,33 +41,57 @@ const generateScopeSheetFlow = ai.defineFlow(
 
         const command = `python3 ${scriptPath} ${templatePath} ${coordsPath} ${payloadPath} ${outputPath}`;
         
-        console.log(`[generateScopeSheetFlow] Executing command: ${command}`);
-
+        console.log(`[stampPdfTool] Executing command: ${command}`);
+        
         try {
-            const { stdout, stderr } = await ai.run(command, {});
-            
-            console.log(`[generateScopeSheetFlow] STDOUT: ${stdout}`);
-            if (stderr) {
-                console.error(`[generateScopeSheetFlow] STDERR: ${stderr}`);
-            }
+            // NOTE: We are intentionally NOT using ai.run() here as this tool IS the execution.
+            // This will be executed by the flow's runtime.
+            const exec = require('child_process').exec;
+            return await new Promise((resolve) => {
+                 exec(command, async (error: any, stdout: string, stderr: string) => {
+                    console.log(`[stampPdfTool] STDOUT: ${stdout}`);
+                    if (stderr) {
+                        console.error(`[stampPdfTool] STDERR: ${stderr}`);
+                    }
+                    if (error) {
+                        console.error(`[stampPdfTool] Execution failed: ${error.message}`);
+                        resolve({ error: `Python script execution failed: ${error.message}`, stdout, stderr });
+                        return;
+                    }
 
-            try {
-                const pdfBytes = await fs.readFile(outputPath);
-                const pdfBase64 = pdfBytes.toString('base64');
-                return { pdfBase64, stdout, stderr: stderr || '' };
-            } catch (readError: any) {
-                 console.error(`[generateScopeSheetFlow] Error reading output file: ${readError.message}`);
-                 return { error: `Failed to read PDF output file. STDERR: ${stderr}`, stdout, stderr };
-            }
+                    try {
+                        const pdfBytes = await fs.readFile(outputPath);
+                        const pdfBase64 = pdfBytes.toString('base64');
+                        resolve({ pdfBase64, stdout, stderr: stderr || '' });
+                    } catch (readError: any) {
+                        console.error(`[stampPdfTool] Error reading output file: ${readError.message}`);
+                        resolve({ error: `Failed to read PDF output file. STDERR: ${stderr}`, stdout, stderr });
+                    } finally {
+                        await fs.unlink(payloadPath).catch((err) => console.log(`[cleanup] Failed to delete payload file: ${err.message}`));
+                        await fs.unlink(outputPath).catch((err) => console.log(`[cleanup] Failed to delete output file: ${err.message}`));
+                    }
+                });
+            });
 
         } catch (execError: any) {
-            console.error(`[generateScopeSheetFlow] Execution failed: ${execError.message}`);
-            return { error: `Python script execution failed: ${execError.message}`, stdout: execError.stdout || '', stderr: execError.stderr || '' };
-        } finally {
-            // Clean up temporary files
-            await fs.unlink(payloadPath).catch((err) => console.log(`[cleanup] Failed to delete payload file: ${err.message}`));
-            await fs.unlink(outputPath).catch((err) => console.log(`[cleanup] Failed to delete output file: ${err.message}`));
+            console.error(`[stampPdfTool] Top-level execution failed: ${execError.message}`);
+            return { error: `Tool execution wrapper failed: ${execError.message}` };
         }
+    }
+);
+
+
+const generateScopeSheetFlow = ai.defineFlow(
+    {
+        name: 'generateScopeSheetFlow',
+        inputSchema: scopeSheetSchema,
+        outputSchema: GenerateScopeSheetOutputSchema,
+        // Provide the tool to the flow
+        tools: [stampPdfTool],
+    },
+    async (data) => {
+        // Now, we call the defined tool
+        return await stampPdfTool(data);
     }
 );
 
