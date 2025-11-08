@@ -13,7 +13,7 @@ import {
   Ruler,
   AreaChart,
   TrendingUp,
-  MousePointerSquare,
+  MousePointerSquareDashed,
   X,
   Circle,
   Wind,
@@ -119,7 +119,7 @@ export default function RoofDiagramPage() {
           <CardHeader>
             <CardTitle className="font-headline">Diagram</CardTitle>
             <CardDescription className="flex items-center gap-2">
-              <MousePointerSquare className="size-4" />
+              <MousePointerSquareDashed className="size-4" />
               Current mode: {selectedKey ? `Placing '${selectedKey}'` : 'Viewing'}
             </CardDescription>
           </CardHeader>
