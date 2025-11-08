@@ -74,11 +74,11 @@ const scopeSheetSchema = z.object({
   rakeLF: z.string().optional(),
   totalSquares: z.string().optional(),
   aerialMeasurements1Story: z.string().optional(),
-  aerialMeasurements2Story: z_string().optional(),
+  aerialMeasurements2Story: z.string().optional(),
   yesNoEaveRake: z.string().optional(),
   turbineQtyLead: z.string().optional(),
   turbineQtyPlastic: z.string().optional(),
-hvacVentQtyLead: z.string().optional(),
+  hvacVentQtyLead: z.string().optional(),
   hvacVentQtyPlastic: z.string().optional(),
   rainDiverterQtyLead: z.string().optional(),
   rainDiverterQtyPlastic: z.string().optional(),
@@ -210,84 +210,302 @@ export default function ScopeSheetPage() {
   }, [searchParams, form])
 
   function onSubmit(values: z.infer<typeof scopeSheetSchema>) {
-    const doc = new jsPDF();
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'pt',
+      format: 'letter',
+    });
+
+    const docWidth = doc.internal.pageSize.getWidth();
+    const docHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+
+    // Helper function for drawing text
+    const text = (
+      text: string,
+      x: number,
+      y: number,
+      options?: { align?: 'left' | 'center' | 'right'; color?: number[]; size?: number; font?: 'helvetica' | 'times' | 'courier'; style?: 'normal' | 'bold' | 'italic' }
+    ) => {
+      if (options?.color) doc.setTextColor(options.color[0], options.color[1], options.color[2]);
+      if (options?.size) doc.setFontSize(options.size);
+      if (options?.font && options?.style) doc.setFont(options.font, options.style);
+      else if (options?.font) doc.setFont(options.font);
+      else if (options?.style) doc.setFont('helvetica', options.style);
+      
+      doc.text(text, x, y, { align: options?.align || 'left' });
+      
+      // Reset to defaults
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+    };
+
+    // Draw main frame
+    doc.setDrawColor(0);
+    doc.setLineWidth(1);
+    doc.rect(margin, margin, docWidth - margin * 2, docHeight - margin * 2);
+
+    // Header
+    const headerY = margin + 15;
+    text('ScopeSheet Pro', margin + 10, headerY, { size: 16, style: 'bold'});
+    text(`Claim: ${values.claimNumber}`, docWidth / 2, headerY, { size: 12, align: 'center'});
+    text(`Date: ${new Date().toLocaleDateString()}`, docWidth - margin - 10, headerY, { size: 10, align: 'right'});
     
-    // Add header
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.text('ScopeSheet Pro - Inspection Report', 105, 20, { align: 'center' });
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Report Date: ${new Date().toLocaleDateString()}`, 105, 28, { align: 'center' });
+    // --- Top section ---
+    let yPos = margin + 30;
+    doc.line(margin, yPos, docWidth - margin, yPos);
 
-    // Claim & Property Info
-    (doc as any).autoTable({
-        startY: 40,
-        head: [['Claim & Property Information']],
-        body: [
-            ['Claim #', values.claimNumber],
-            ['Policy #', values.policyNumber],
-            ['Date of Loss', values.dateOfLoss],
-            ['Client Name', values.clientName],
-            ['Client Email', values.clientEmail],
-            ['Client Phone', values.clientPhone],
-            ['Property Address', values.propertyAddress],
-        ],
-        theme: 'striped',
-        headStyles: { fillColor: [41, 56, 78] },
+    // Shingle Type
+    let xPos = margin;
+    let shingleBoxWidth = 100;
+    doc.rect(xPos, yPos, shingleBoxWidth, 70);
+    text('Shingle Type', xPos + 5, yPos + 10, { style: 'bold' });
+    const shingleTypes = ['3 Tab', 'Laminate', 'Other:'];
+    shingleTypes.forEach((type, i) => {
+      doc.rect(xPos + 5, yPos + 18 + i * 15, 8, 8);
+      text(type, xPos + 15, yPos + 25 + i * 15);
     });
 
-    // Inspection Details
-    (doc as any).autoTable({
-        startY: (doc as any).lastAutoTable.finalY + 10,
-        head: [['Inspection Details']],
-        body: [
-            ['Inspector', values.inspector || 'N/A'],
-            ['Inspector Phone', values.phone || 'N/A'],
-            ['Inspector Email', values.email || 'N/A'],
-            ['Hail (F/R/B/L)', `${values.hailF}/${values.hailR}/${values.hailB}/${values.hailL}`],
-            ['Wind Date', values.windDate || 'N/A'],
-            ['Ladder Now', values.ladderNow ? 'Yes' : 'No'],
-        ],
-        theme: 'striped',
-        headStyles: { fillColor: [41, 56, 78] },
+    const shingleMakes = ['20 Y', '25 Y', '30 Y', '40 Y', '50 Y'];
+    shingleMakes.forEach((make, i) => {
+       doc.rect(xPos + 50, yPos + 18 + (i % 3) * 15, 8, 8);
+       text(make, xPos + 60, yPos + 25 + (i % 3) * 15);
+       if (i == 2) {
+         xPos += 40; // shift for 40y and 50y
+       }
+    });
+    if (values.shingleType) text(values.shingleType, xPos + 15 + 30, yPos + 25 + 2 * 15);
+
+
+    // Ice/Water Shield, Drip Edge
+    yPos += 70;
+    doc.rect(margin, yPos, shingleBoxWidth, 40);
+    text('Ice/Water Shield', margin + 5, yPos + 10, {style: 'bold'});
+    doc.rect(margin + 5, yPos + 15, 8, 8);
+    text('Valley', margin + 15, yPos + 22);
+    doc.rect(margin + 40, yPos + 15, 8, 8);
+    text('Eave', margin + 50, yPos + 22);
+    doc.rect(margin + 70, yPos + 15, 8, 8);
+    text('Rake', margin + 80, yPos + 22);
+
+    yPos += 40;
+    doc.rect(margin, yPos, shingleBoxWidth, 25);
+    text('Drip Edge', margin + 5, yPos + 10, {style: 'bold'});
+    doc.rect(margin + 5, yPos + 14, 8, 8);
+    text('Yes', margin + 15, yPos + 21);
+    doc.rect(margin + 35, yPos + 14, 8, 8);
+    text('No', margin + 45, yPos + 21);
+    doc.rect(margin + 65, yPos + 14, 8, 8);
+    text('Eave', margin + 75, yPos + 21);
+    
+    // Valley Metal
+    yPos += 25;
+    doc.rect(margin, yPos, shingleBoxWidth, 25);
+    text('Valley Metal', margin + 5, yPos + 10, {style: 'bold'});
+    text('LF', margin + 75, yPos + 20);
+    if(values.valleyMetalLF) text(values.valleyMetalLF, margin + 55, yPos + 20);
+
+    // Layers, Pitch
+    yPos += 25;
+    doc.rect(margin, yPos, shingleBoxWidth, 25);
+    text('Layers:', margin + 5, yPos + 15, { style: 'bold' });
+    if(values.layers) text(values.layers, margin + 45, yPos + 15);
+
+    yPos += 25;
+    doc.rect(margin, yPos, shingleBoxWidth, 25);
+    text('Pitch:', margin + 5, yPos + 15, { style: 'bold' });
+    if(values.pitch) text(values.pitch, margin + 45, yPos + 15);
+
+    
+    // Middle Top Section
+    let middleX = margin + shingleBoxWidth + 5;
+    let middleY = margin + 30;
+    let middleWidth = docWidth - (margin * 2) - shingleBoxWidth - 5;
+    
+    // Eave / Rake
+    doc.rect(middleX, middleY, middleWidth, 25);
+    text(`Eave: LF ${values.eaveLF || 'N/A'}`, middleX + 5, middleY + 15);
+    text(`Rake: LF ${values.rakeLF || 'N/A'}`, middleX + 150, middleY + 15);
+    text(`Email: ${values.clientEmail || ''}`, middleX + 300, middleY + 15);
+
+    // Calculations & Aerial Measurements
+    middleY += 25;
+    doc.rect(middleX, middleY, middleWidth, 80);
+    text('Calculations:', middleX + 5, middleY + 10, {style: 'bold'});
+    text('Aerial Measurements:', middleX + 300, middleY + 10, {style: 'bold'});
+    
+    const calcs = ['A', 'B', 'C', 'D', 'E'];
+    calcs.forEach((c, i) => {
+        text(`${c} ${values[`calc${c}`] || 'N/A'}`, middleX + 5, middleY + 25 + i * 12);
+    });
+    const calcs2 = ['F', 'G', 'H', 'I', 'J'];
+    calcs2.forEach((c, i) => {
+        text(`${c} ${values[`calc${c}`] || 'N/A'}`, middleX + 90, middleY + 25 + i * 12);
+    });
+     const calcs3 = ['K', 'L', 'M'];
+    calcs3.forEach((c, i) => {
+        text(`${c} ${values[`calc${c}`] || 'N/A'}`, middleX + 180, middleY + 25 + i * 12);
     });
 
-    // Roof & Shingle Info
-     (doc as any).autoTable({
-        startY: (doc as any).lastAutoTable.finalY + 10,
-        head: [['Roof & Shingle Information']],
-        body: [
-          ['Eave (LF)', values.eaveLF || 'N/A'],
-          ['Shingle Type', values.shingleType || 'N/A'],
-          ['Layers', values.layers || 'N/A'],
-          ['Pitch', values.pitch || 'N/A'],
-          ['Total Squares', values.totalSquares || 'N/A'],
-          ['Shingle Make', values.shingleMake || 'N/A'],
-          ['Ice/Water Shield', values.iceWaterShield ? 'Yes' : 'No'],
-          ['Drip Edge', values.dripEdge ? 'Yes' : 'No'],
-        ],
-        theme: 'grid',
-        headStyles: { fillColor: [41, 56, 78] },
+    text(`1 Story: ${values.aerialMeasurements1Story || ''}`, middleX + 300, middleY + 25);
+    text(`2 Story: ${values.aerialMeasurements2Story || ''}`, middleX + 300, middleY + 40);
+
+    // Total Squares
+    middleY += 80;
+    doc.rect(middleX, middleY, middleWidth, 25);
+    text('Total Squares:', middleX + 150, middleY + 15, {style: 'bold'});
+    if(values.totalSquares) text(values.totalSquares, middleX + 220, middleY + 15);
+    
+    // Key
+    middleY += 25;
+    doc.rect(middleX, middleY, middleWidth, 50);
+    text('Key:', middleX + 5, middleY + 10, {style: 'bold'});
+    const keyItems = [
+      'TS = Test Square', 'B = Blistering', 'M = Mechanical Damage',
+      'TC = Thermal Cracking', 'PV = Power Vent', 'TD = Tree Damage',
+      '☐ = Box Vent', '⚫ = HVAC', '☑ = Chimney',
+      'X = Wind Damage', '○ = Pipe Boot', 'E = Exhaust vent'
+    ];
+    keyItems.forEach((item, i) => {
+      text(item, middleX + 5 + (Math.floor(i/4) * 120), middleY + 22 + (i % 4) * 10);
     });
+
+    // Inch to Decimal
+    const decimalTableX = middleX + middleWidth - 120;
+    doc.rect(decimalTableX, middleY - 25, 120, 75);
+    const inches = [1,2,3,4,5,6];
+    const decimals = ['.08', '.17', '.25', '.33', '.42', '.50'];
+    const inches2 = [7,8,9,10,11,12];
+    const decimals2 = ['.58', '.67', '.75', '.83', '.92', '1.00'];
+
+    inches.forEach((inch, i) => {
+      text(`${inch}"`, decimalTableX + 5, middleY - 15 + i * 12);
+      text(decimals[i], decimalTableX + 25, middleY - 15 + i * 12);
+    });
+     inches2.forEach((inch, i) => {
+      text(`${inch}"`, decimalTableX + 65, middleY - 15 + i * 12);
+      text(decimals2[i], decimalTableX + 85, middleY - 15 + i * 12);
+    });
+
+    // Main Grid Area
+    const gridY = middleY + 50;
+    const gridX = middleX;
+    const gridWidth = middleWidth;
+    const gridHeight = docHeight - gridY - margin - 50;
+    doc.rect(gridX, gridY, gridWidth, gridHeight);
+    doc.setDrawColor(200);
+    for (let i = 1; i < (gridWidth / 10); i++) {
+        doc.line(gridX + i * 10, gridY, gridX + i * 10, gridY + gridHeight);
+    }
+    for (let i = 1; i < (gridHeight / 10); i++) {
+        doc.line(gridX, gridY + i * 10, gridX + gridWidth, gridY + i * 10);
+    }
+    doc.setDrawColor(0);
+
+
+    // Left side panel continued
+    let leftPanelY = margin + 265;
+    const leftPanelX = margin;
+    const leftPanelWidth = shingleBoxWidth;
+
+    const accessories = [
+      { name: 'Box Vents', fields: ['Metal', 'Plastic', 'Damaged'] },
+      { name: 'Ridge Vent', fields: ['LF', 'Plastic'] },
+      { name: 'Turbine', fields: [] },
+      { name: 'HVAC Vent', fields: [] },
+      { name: 'Rain Diverter', fields: [] },
+      { name: 'Power Vent', fields: [] },
+      { name: 'Skylight', fields: [] },
+      { name: 'SAT', fields: [] },
+    ];
+    accessories.forEach(acc => {
+      doc.rect(leftPanelX, leftPanelY, leftPanelWidth, 20);
+      text(acc.name, leftPanelX + 2, leftPanelY + 12, {size: 7, style: 'bold'});
+      leftPanelY+=20;
+    })
+
+    // Pipes
+    doc.rect(leftPanelX, leftPanelY, leftPanelWidth, 20);
+    text('Pipes:', leftPanelX + 2, leftPanelY + 12, {size: 7, style: 'bold'});
+    text('Qty', leftPanelX + 35, leftPanelY + 8, {size: 6});
+    text('Lead', leftPanelX + 60, leftPanelY + 8, {size: 6});
+    text('Qty', leftPanelX + 35, leftPanelY + 18, {size: 6});
+    text('Plastic', leftPanelX + 60, leftPanelY + 18, {size: 6});
+    leftPanelY+=20;
+
+    // Gutters
+    doc.rect(leftPanelX, leftPanelY, leftPanelWidth, 20);
+    text('Gutters:', leftPanelX + 2, leftPanelY + 12, {size: 7, style: 'bold'});
+    doc.rect(leftPanelX + 50, leftPanelY + 8, 8, 8); text('5"', leftPanelX + 60, leftPanelY+15, {size: 7})
+    doc.rect(leftPanelX + 75, leftPanelY + 8, 8, 8); text('6"', leftPanelX + 85, leftPanelY+15, {size: 7})
+    leftPanelY+=20;
+
+    // Downspouts
+    doc.rect(leftPanelX, leftPanelY, leftPanelWidth, 20);
+    text('Downspouts:', leftPanelX + 2, leftPanelY + 12, {size: 7, style: 'bold'});
+    doc.rect(leftPanelX + 50, leftPanelY + 8, 8, 8); text('2x3', leftPanelX + 60, leftPanelY+15, {size: 7})
+    doc.rect(leftPanelX + 75, leftPanelY + 8, 8, 8); text('3x4', leftPanelX + 85, leftPanelY+15, {size: 7})
+    leftPanelY+=20;
+
+    // Fascia
+    doc.rect(leftPanelX, leftPanelY, leftPanelWidth, 20);
+    text('Fascia:', leftPanelX + 2, leftPanelY + 12, {size: 7, style: 'bold'});
+    text('Size', leftPanelX + 35, leftPanelY + 8, {size: 6});
+    text('LF', leftPanelX + 60, leftPanelY + 8, {size: 6});
+    text('N/A', leftPanelX + 80, leftPanelY + 8, {size: 6});
+    leftPanelY+=20;
+
+    // Wood / Metal
+    doc.rect(leftPanelX, leftPanelY, leftPanelWidth, 15);
+    text('Wood / Metal', leftPanelX + 2, leftPanelY + 10, {size: 7, style: 'bold'});
+    leftPanelY+=15;
+
+    // Chimney Flashing
+    doc.rect(leftPanelX, leftPanelY, leftPanelWidth, 15);
+    text('Chimney Flashing:', leftPanelX + 2, leftPanelY + 10, {size: 7, style: 'bold'});
+    leftPanelY+=15;
+    
+    // Other
+    doc.rect(leftPanelX, leftPanelY, leftPanelWidth, 40);
+    text('Other:', leftPanelX + 2, leftPanelY + 10, {size: 7, style: 'bold'});
+    text('Solar', leftPanelX+5, leftPanelY+20, {size: 7});
+    text('Vent E', leftPanelX+5, leftPanelY+30, {size: 7});
+    text('Exhaust Vent', leftPanelX+35, leftPanelY+30, {size: 7});
+    leftPanelY+=40;
+
+
+    // --- Bottom section ---
+    const bottomY = docHeight - margin - 45;
+    doc.line(margin, bottomY, docWidth - margin, bottomY);
+
+    // Max Hail, Storm Direction, Collateral
+    text('Max Hail Diameter:', margin + 5, bottomY + 10, {size: 7, style: 'bold'});
+    text(values.maxHailDiameter || '', margin + 75, bottomY + 10, {size: 7});
+    text('Storm Direction:', margin + 5, bottomY + 22, {size: 7, style: 'bold'});
+    text(values.stormDirection || '', margin + 75, bottomY + 22, {size: 7});
+    text('Collateral Damage:', margin + 5, bottomY + 34, {size: 7, style: 'bold'});
+    text(values.collateralDamageF || '', margin + 75, bottomY + 34, {size: 7});
+
 
     // Notes
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Inspector Notes', 14, (doc as any).lastAutoTable.finalY + 15);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    const notes = doc.splitTextToSize(values.notes || 'No notes provided.', 180);
-    doc.text(notes, 14, (doc as any).lastAutoTable.finalY + 22);
+    text('Notes:', gridX + 5, bottomY + 10, { style: 'bold' });
+    const notesLines = doc.splitTextToSize(values.notes || '', gridWidth - 100);
+    text(notesLines.join('\n'), gridX + 5, bottomY + 22);
+
+    // Compass
+    const compassX = docWidth - margin - 25;
+    const compassY = bottomY + 22;
+    doc.circle(compassX, compassY, 15);
+    text('N', compassX, compassY - 10, {align: 'center'});
+    text('S', compassX, compassY + 14, {align: 'center'});
+    text('W', compassX - 12, compassY + 2, {align: 'center'});
+    text('E', compassX + 12, compassY + 2, {align: 'center'});
 
     // Footer
-    const pageCount = (doc as any).internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
-        doc.text('ScopeSheet Pro | (866)801-1258', 14, 290);
-    }
+    const footerY = docHeight - margin + 10;
+    text('ScopeSheet Pro', margin, footerY, {size: 8});
+    text('(866)801-1258', docWidth - margin, footerY, {size: 8, align: 'right'});
     
     doc.save(`ScopeSheet-${values.claimNumber}.pdf`);
 
