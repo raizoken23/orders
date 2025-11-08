@@ -9,7 +9,11 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { geminiPro, gpt4oMini } from 'genkitx-openai';
+import { googleAI } from '@genkit-ai/google-genai';
+import { openAI } from '@genkit-ai/compat-oai/openai';
+
+const gpt4oMini = openAI.model('gpt-4o-mini');
+const geminiPro = googleAI.model('gemini-pro');
 
 
 const DiagnoseErrorInputSchema = z.object({

@@ -1,6 +1,6 @@
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
-import { openAI } from 'genkitx-openai';
+import {openAI} from '@genkit-ai/compat-oai/openai';
 
 // This is the primary Genkit configuration, used by Next.js in server-side code.
 export const ai = genkit({
