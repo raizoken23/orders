@@ -11,6 +11,10 @@ import { scopeSheetSchema } from '@/lib/schema/scope-sheet';
 import path from 'path';
 import fs from 'fs/promises';
 import os from 'os';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 const GenerateScopeSheetOutputSchema = z.object({
     pdfBase64: z.string().optional(),
@@ -19,20 +23,45 @@ const GenerateScopeSheetOutputSchema = z.object({
     stderr: z.string().optional(),
 });
 
+const stampPdfTool = ai.defineTool(
+  {
+    name: 'stampPdfTool',
+    description: 'Runs the python script to stamp data onto the PDF template.',
+    inputSchema: z.object({
+      scriptPath: z.string(),
+      templatePath: z.string(),
+      coordsPath: z.string(),
+      payloadPath: z.string(),
+      outputPath: z.string(),
+    }),
+    outputSchema: z.object({
+      stdout: z.string(),
+      stderr: z.string(),
+    }),
+  },
+  async (input) => {
+    // Determine the python command based on the environment
+    const pythonCmd = process.env.GENKIT_ENV === 'dev' ? 'python3' : 'python';
+    const command = `${pythonCmd} ${input.scriptPath} ${input.templatePath} ${input.coordsPath} ${input.payloadPath} ${input.outputPath}`;
+    console.log(`[stampPdfTool] Executing command: ${command}`);
+    const { stdout, stderr } = await execAsync(command);
+    return { stdout, stderr };
+  }
+);
+
 
 const generateScopeSheetFlow = ai.defineFlow(
     {
         name: 'generateScopeSheetFlow',
         inputSchema: scopeSheetSchema,
         outputSchema: GenerateScopeSheetOutputSchema,
+        tools: [stampPdfTool]
     },
     async (data) => {
         const masterTemplatePath = path.resolve(process.cwd(), 'public/satellite_base.pdf');
-        // For Stage 1, coords and payload are not used by the python script, but we need paths.
         const coordsPath = path.resolve(process.cwd(), 'pdfsys/coords.json.sample'); 
         const scriptPath = path.resolve(process.cwd(), 'pdfsys/stamp_pdf.py');
 
-        // Create a temporary directory for this specific run to avoid conflicts.
         const uniqueId = `pdf-gen-${Date.now()}`;
         const runDir = path.join(os.tmpdir(), uniqueId);
         await fs.mkdir(runDir, { recursive: true });
@@ -46,45 +75,36 @@ const generateScopeSheetFlow = ai.defineFlow(
         console.log(`[generateScopeSheetFlow] Output Path: ${outputPath}`);
         console.log(`[generateScopeSheetFlow] Master Template Path: ${masterTemplatePath}`);
 
-        // Write the payload and copy the template into the temporary directory.
-        await fs.writeFile(payloadPath, JSON.stringify(data, null, 2));
-        await fs.copyFile(masterTemplatePath, templatePath);
-        console.log(`[generateScopeSheetFlow] Copied master template to temp location.`);
-
         try {
-            // STAGE 1: Call the python script with minimal arguments.
-            const { stdout, stderr } = await ai.run('python', [
+            await fs.writeFile(payloadPath, JSON.stringify(data, null, 2));
+            await fs.copyFile(masterTemplatePath, templatePath);
+            console.log(`[generateScopeSheetFlow] Copied master template to temp location.`);
+
+            const { stdout, stderr } = await stampPdfTool({
                 scriptPath,
                 templatePath,
-                outputPath, // Arg 2 for stage 1
-                // Dummy args for stage 1 - the script expects them but doesn't use them
                 coordsPath, 
                 payloadPath,
-            ]);
+                outputPath,
+            });
 
             console.log(`[generateScopeSheetFlow] STDOUT: ${stdout}`);
             if (stderr) {
                 console.error(`[generateScopeSheetFlow] STDERR: ${stderr}`);
             }
 
-            // After execution, check if the output file was actually created.
             try {
                 const pdfBytes = await fs.readFile(outputPath);
                 const pdfBase64 = pdfBytes.toString('base64');
-                // If we have a PDF, return success.
                 return { pdfBase64, stdout, stderr: stderr || '' };
             } catch (readError: any) {
-                // This means the python script ran without crashing but DID NOT produce an output.pdf
                 console.error(`[generateScopeSheetFlow] Error reading output file: ${readError.message}`);
                 return { error: `Python script ran but failed to create a PDF.`, stdout, stderr: stderr || readError.message };
             }
         } catch (execError: any) {
-            // This means the `ai.run()` command itself failed (e.g., command not found, or script exited with non-zero).
-            console.error(`[generateScopeSheetFlow] Script execution failed: ${execError.message}`);
-            // IMPORTANT: Return the stdout/stderr from the execError object
-            return { error: `Python script execution failed.`, stdout: execError.stdout || '', stderr: execError.stderr || execError.message };
+            console.error(`[generateScopeSheetFlow] Tool execution failed: ${execError.message}`);
+            return { error: `Tool execution failed.`, stdout: execError.stdout || '', stderr: execError.stderr || execError.message };
         } finally {
-            // Cleanup the temporary files
             await fs.rm(runDir, { recursive: true, force: true }).catch((err) => console.log(`[cleanup] Failed to delete temp directory: ${err.message}`));
         }
     }
