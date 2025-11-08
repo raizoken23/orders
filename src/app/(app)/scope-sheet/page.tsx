@@ -226,23 +226,32 @@ export default function ScopeSheetPage() {
 
         {errorDetails && (
             <AlertDialog open={!!errorDetails} onOpenChange={() => setErrorDetails(null)}>
-                <AlertDialogContent>
+                <AlertDialogContent className="max-w-2xl">
                     <AlertDialogHeader>
                     <AlertDialogTitle className="flex items-center gap-2">
                         <Terminal className="text-red-500"/>
                         Backend Diagnostic Report
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                        The PDF generation script failed. Here is the output from the server.
+                        The PDF generation script failed. Here is the output from the server, which may help diagnose the issue.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <div className="mt-4 bg-slate-900 text-white font-mono text-xs p-4 rounded-md overflow-x-auto max-h-[50vh]">
+                    <div className="mt-2 bg-slate-900 text-white font-mono text-xs p-4 rounded-md overflow-x-auto max-h-[60vh]">
                         <p className="font-bold text-red-400">Error:</p>
-                        <pre className="whitespace-pre-wrap">{errorDetails.error || 'No error message provided.'}</pre>
-                        <p className="mt-4 font-bold text-yellow-400">STDERR:</p>
                         <pre className="whitespace-pre-wrap">{errorDetails.stderr || 'No stderr output.'}</pre>
-                        <p className="mt-4 font-bold text-gray-400">STDOUT:</p>
-                        <pre className="whitespace-pre-wrap">{errorDetails.stdout || 'No stdout output.'}</pre>
+
+                        <p className="mt-4 font-bold text-yellow-400">Analysis & Fix:</p>
+                        <pre className="whitespace-pre-wrap">
+                            The error <code className='text-red-300 bg-slate-800 px-1 rounded'>python3: command not found</code> indicates the server environment cannot find the `python3` executable.
+                            <br/><br/>
+                            **File to Fix:** `src/ai/flows/generate-scope-sheet.ts`
+                            <br/>
+                            **Suggested Change:** The command in the `exec` call should use `python` instead of `python3`.
+                        </pre>
+
+                        <p className="mt-4 font-bold text-gray-400">Full Error Object:</p>
+                        <pre className="whitespace-pre-wrap">{JSON.stringify(errorDetails, null, 2)}</pre>
+
                     </div>
                     <AlertDialogFooter>
                     <AlertDialogAction onClick={() => setErrorDetails(null)}>Close</AlertDialogAction>

@@ -39,13 +39,11 @@ const stampPdfTool = ai.defineTool(
 
         await fs.writeFile(payloadPath, JSON.stringify(data, null, 2));
 
-        const command = `python3 ${scriptPath} ${templatePath} ${coordsPath} ${payloadPath} ${outputPath}`;
+        const command = `python ${scriptPath} ${templatePath} ${coordsPath} ${payloadPath} ${outputPath}`;
         
         console.log(`[stampPdfTool] Executing command: ${command}`);
         
         try {
-            // NOTE: We are intentionally NOT using ai.run() here as this tool IS the execution.
-            // This will be executed by the flow's runtime.
             const exec = require('child_process').exec;
             return await new Promise((resolve) => {
                  exec(command, async (error: any, stdout: string, stderr: string) => {
@@ -86,11 +84,9 @@ const generateScopeSheetFlow = ai.defineFlow(
         name: 'generateScopeSheetFlow',
         inputSchema: scopeSheetSchema,
         outputSchema: GenerateScopeSheetOutputSchema,
-        // Provide the tool to the flow
         tools: [stampPdfTool],
     },
     async (data) => {
-        // Now, we call the defined tool
         return await stampPdfTool(data);
     }
 );
