@@ -1,5 +1,6 @@
 
 'use server';
+export const runtime = 'nodejs'; // Required: specify Node.js runtime for Python execution.
 
 /**
  * @fileOverview A flow that generates a PDF scope sheet by stamping form data onto a template using a Python script.
@@ -39,8 +40,15 @@ export async function generateScopeSheetPdf(data: z.infer<typeof scopeSheetSchem
         console.log(`[generateScopeSheetPdf] Script: ${file}`);
         console.log(`[generateScopeSheetPdf] Template: ${template}`);
         console.log(`[generateScopeSheetPdf] Coords: ${coordsPath}`);
-
+        
         const coords = JSON.parse(fs.readFileSync(coordsPath,'utf8'));
+
+        console.debug("PDF_CALL", {
+            cwd: process.cwd(),
+            file, fn: "run",
+            templateExists: fs.existsSync(template),
+            coordsKeys: Object.keys(coords.text || {}).length + "/" + Object.keys(coords.checks || {}).length
+        });
 
         const { output, error: executionError } = await ai.run({
             runtime: 'python',
