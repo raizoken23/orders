@@ -147,5 +147,3 @@ if __name__ == "__main__":
         print("[ERROR] PDF generation failed.")
         print(json.dumps(res, indent=2))
         raise SystemExit(1)
-
-    
