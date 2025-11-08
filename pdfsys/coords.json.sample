@@ -1,0 +1,20 @@
+{
+  "meta": { "template": "templates/master.pdf", "templateSha256": "", "version": "1.0.0" },
+  "text": {
+    "header.date": { "xIn": 6.85, "yIn": 10.40, "sizePt": 11, "align": "left" },
+    "header.inspector": { "xIn": 6.85, "yIn": 9.70, "sizePt": 11 },
+    "dateOfLoss": { "xIn": 4.15, "yIn": 9.7, "sizePt": 11 },
+    "claimNumber": { "xIn": 1.5, "yIn": 10.05, "sizePt": 11 },
+    "policyNumber": { "xIn": 4.15, "yIn": 10.05, "sizePt": 11 },
+    "clientName": { "xIn": 1.5, "yIn": 9.7, "sizePt": 11 },
+    "propertyAddress": { "xIn": 1.5, "yIn": 9.2, "sizePt": 11, "maxWidthPt": 240 },
+    "windDate": { "xIn": 6.85, "yIn": 10.4, "sizePt": 11 },
+    "inspector": { "xIn": 6.85, "yIn": 9.7, "sizePt": 11 },
+    "phone": { "xIn": 6.85, "yIn": 9.35, "sizePt": 11 },
+    "email": { "xIn": 6.85, "yIn": 9.0, "sizePt": 11 }
+  },
+  "checks": {
+    "shingleType.3 Tab": { "xIn": 0.65, "yIn": 8.2, "sizeIn": 0.12, "value": "3 Tab" },
+    "shingleType.Laminate": { "xIn": 1.45, "yIn": 8.2, "sizeIn": 0.12, "value": "Laminate" }
+  }
+}
