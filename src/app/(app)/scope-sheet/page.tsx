@@ -28,107 +28,7 @@ import { useEffect } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-
-const scopeSheetSchema = z.object({
-  claimNumber: z.string().min(1, 'Claim number is required.'),
-  policyNumber: z.string().min(1, 'Policy number is required.'),
-  clientName: z.string().min(1, 'Client name is required.'),
-  clientEmail: z.string().email('Invalid email address.'),
-  clientPhone: z.string().min(1, 'Phone number is required.'),
-  propertyAddress: z.string().min(1, 'Property address is required.'),
-  dateOfLoss: z.string().min(1, 'Date of loss is required.'),
-  hailF: z.string().optional(),
-  hailR: z.string().optional(),
-  hailB: z.string().optional(),
-  hailL: z.string().optional(),
-  windF: z.string().optional(),
-  windR: z.string().optional(),
-  windB: z.string().optional(),
-  windL: z.string().optional(),
-  treeF: z.string().optional(),
-  treeR: z.string().optional(),
-  treeB: z.string().optional(),
-  treeL: z.string().optional(),
-  windDate: z.string().optional(),
-  ladderNow: z.boolean().optional(),
-  inspector: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().optional(),
-  eaveLF: z.string().optional(),
-  eaveNA: z.boolean().optional(),
-  shingleType: z.array(z.string()).optional(),
-  otherShingle: z.string().optional(),
-  iceWaterShield: z.array(z.string()).optional(),
-  dripEdge: z.array(z.string()).optional(),
-  dripEdgeRadio: z.string().optional(),
-  layers: z.string().optional(),
-  pitch: z.string().optional(),
-  valleyMetalLF: z.string().optional(),
-  valleyMetalNA: z.boolean().optional(),
-  shingleMake: z.array(z.string()).optional(),
-  calcA: z.string().optional(),
-  calcB: z.string().optional(),
-  calcC: z.string().optional(),
-  calcD: z.string().optional(),
-  calcE: z.string().optional(),
-  calcF: z.string().optional(),
-  calcG: z.string().optional(),
-  calcH: z.string().optional(),
-  calcK: z.string().optional(),
-  calcL: z.string().optional(),
-  calcM: z.string().optional(),
-  calcI: z.string().optional(),
-  calcJ: z.string().optional(),
-  rakeLF: z.string().optional(),
-  rakeNA: z.boolean().optional(),
-  totalSquares: z.string().optional(),
-  aerialMeasurements1Story: z.boolean().optional(),
-  aerialMeasurements2Story: z.boolean().optional(),
-  yesNoEaveRake: z.string().optional(),
-  turbineQtyLead: z.string().optional(),
-  turbineQtyPlastic: z.string().optional(),
-  hvacventQtyLead: z.string().optional(),
-  hvacventQtyPlastic: z.string().optional(),
-  raindiverterQtyLead: z.string().optional(),
-  raindiverterQtyPlastic: z.string().optional(),
-  powerVentQtyLead: z.string().optional(),
-  powerVentQtyPlastic: z.string().optional(),
-  skylightQtyLead: z.string().optional(),
-  skylightQtyPlastic: z.string().optional(),
-  satQtyLead: z.string().optional(),
-  satQtyPlastic: z.string().optional(),
-  pipeQty: z.string().optional(),
-  pipeLead: z.boolean().optional(),
-  pipePlastic: z.boolean().optional(),
-  guttersLF: z.string().optional(),
-  guttersNA: z.boolean().optional(),
-  guttersSize: z.string().optional(),
-  downspoutsLF: z.string().optional(),
-  downspoutsSize: z.string().optional(),
-  fasciaSize: z.string().optional(),
-  fasciaLF: z.string().optional(),
-  fasciaNA: z.boolean().optional(),
-  fasciaType: z.string().optional(),
-  chimneyFlashing: z.string().optional(),
-  chimneyOther: z.string().optional(),
-  maxHailDiameter: z.string().optional(),
-  stormDirection: z.string().optional(),
-  collateralDamage: z.string().optional(),
-  notes: z.string().optional(),
-  boxVentsQtyLead: z.string().optional(),
-  boxVentsQtyPlastic: z.string().optional(),
-  boxVentsMetal: z.boolean().optional(),
-  boxVentsPlastic: z.boolean().optional(),
-  boxVentsMetalDamaged: z.boolean().optional(),
-  ridgeVentMetalDamaged: z.boolean().optional(),
-  ridgeVentLF: z.string().optional(),
-  ridgeVentPlastic: z.boolean().optional(),
-  otherSolar: z.boolean().optional(),
-  otherVentE: z.boolean().optional(),
-  otherExhaustVent: z.boolean().optional(),
-  woodMetal: z.string().optional()
-})
+import { generateScopeSheet, scopeSheetSchema } from '@/ai/flows/generate-scope-sheet'
 
 type ScopeSheetData = z.infer<typeof scopeSheetSchema>;
 
@@ -148,7 +48,8 @@ const mockData: ScopeSheetData = {
     inspector: 'P Yarborough',
     phone: '310-357-1399',
     email: 'pyarborough@laddernow.com',
-    shingleType: ['Laminate', '30 Y'],
+    shingleType: ['Laminate'],
+    shingleMake: ['30 Y'],
     otherShingle: 'Metal Accent',
     iceWaterShield: ['Valley', 'Eave'],
     valleyMetalLF: '40',
@@ -231,138 +132,16 @@ export default function ScopeSheetPage() {
 
   async function onSubmit(values: z.infer<typeof scopeSheetSchema>) {
     try {
-        const url = '/satellite_base.pdf';
-        const existingPdfBytes = await fetch(url).then(res => res.arrayBuffer());
-
-        const pdfDoc = await PDFDocument.load(existingPdfBytes);
-        const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-        const page = pdfDoc.getPages()[0];
+        const { pdfBase64 } = await generateScopeSheet(values);
         
-        const inch = 72;
-        const pageHeight = 11 * inch;
-
-        const drawText = (text: string, x: number, y: number, size = 10) => {
-            if (!text) return;
-            page.drawText(text, { 
-                x: x * inch, 
-                y: pageHeight - (y * inch), 
-                size, 
-                font: helveticaFont, 
-                color: rgb(0, 0, 0) 
-            });
-        };
-
-        const drawCheck = (x: number, y: number) => {
-            const checkX = x * inch;
-            const checkY = pageHeight - (y * inch);
-            const size = 0.1 * inch;
-            page.drawLine({
-                start: { x: checkX, y: checkY },
-                end: { x: checkX + size, y: checkY + size},
-                thickness: 1,
-                color: rgb(0, 0, 0),
-            })
-            page.drawLine({
-                start: { x: checkX + size, y: checkY },
-                end: { x: checkX, y: checkY + size},
-                thickness: 1,
-                color: rgb(0, 0, 0),
-            })
+        const byteCharacters = atob(pdfBase64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
-        
-        // --- DATA MAPPING ---
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
 
-        // Header
-        drawText(values.windDate || '', 6.85, 0.6);
-        drawText(values.inspector || '', 6.85, 1.3);
-        drawText(values.phone || '', 6.85, 1.65);
-        drawText(values.email || '', 6.85, 2.0);
-
-        // Damage Matrix
-        drawText(values.hailF || '', 7.05, 1.45); drawText(values.windF || '', 7.85, 1.45); drawText(values.treeF || '', 8.65, 1.45);
-        drawText(values.hailR || '', 7.05, 1.8); drawText(values.windR || '', 7.85, 1.8); drawText(values.treeR || '', 8.65, 1.8);
-        drawText(values.hailB || '', 7.05, 2.15); drawText(values.windB || '', 7.85, 2.15); drawText(values.treeB || '', 8.65, 2.15);
-        drawText(values.hailL || '', 7.05, 2.5); drawText(values.windL || '', 7.85, 2.5); drawText(values.treeL || '', 8.65, 2.5);
-        
-        // Shingles
-        if(values.shingleType?.includes('3 Tab')) drawCheck(0.7, 2.3);
-        if(values.shingleType?.includes('Laminate')) drawCheck(1.55, 2.3);
-        if(values.shingleMake?.includes('20 Y')) drawCheck(0.7, 2.5);
-        if(values.shingleMake?.includes('25 Y')) drawCheck(1.55, 2.5);
-        if(values.shingleMake?.includes('30 Y')) drawCheck(2.4, 2.5);
-        if(values.shingleMake?.includes('40 Y')) drawCheck(0.7, 2.7);
-        if(values.shingleMake?.includes('50 Y')) drawCheck(1.55, 2.7);
-        drawText(values.otherShingle || '', 3.8, 2.7);
-
-        // Ice/Water
-        if(values.iceWaterShield?.includes('Valley')) drawCheck(0.7, 3.15);
-        if(values.iceWaterShield?.includes('Eave')) drawCheck(1.55, 3.15);
-        if(values.iceWaterShield?.includes('Rake')) drawCheck(0.7, 3.3);
-        drawText(values.valleyMetalLF || '', 3.5, 3.15);
-        
-        // Drip Edge
-        if(values.dripEdgeRadio === 'Yes') drawCheck(0.7, 3.75);
-        if(values.dripEdgeRadio === 'No') drawCheck(1.55, 3.75);
-        if(values.dripEdge?.includes('Eave')) drawCheck(2.4, 3.75);
-        if(values.dripEdge?.includes('Rake')) drawCheck(3.25, 3.75);
-
-        // Left Rail
-        drawText(values.layers || '', 1.9, 4.05);
-        drawText(values.pitch || '', 1.9, 4.4);
-        if(values.boxVentsMetal) drawCheck(1.4, 4.75);
-        if(values.boxVentsPlastic) drawCheck(1.8, 4.75);
-        if(values.boxVentsMetalDamaged) drawCheck(2.2, 4.75);
-        drawText(values.ridgeVentLF || '', 1.9, 5.1);
-        drawText(values.turbineQtyLead || '', 1.9, 5.45);
-        drawText(values.hvacventQtyLead || '', 1.9, 5.8);
-        drawText(values.raindiverterQtyLead || '', 1.9, 6.15);
-        drawText(values.powerVentQtyLead || '', 1.9, 6.5);
-        drawText(values.skylightQtyLead || '', 1.9, 6.85);
-        drawText(values.satQtyLead || '', 1.9, 7.2);
-        drawText(values.pipeQty || '', 1.5, 7.55);
-        if(values.pipeLead) drawCheck(1.9, 7.55);
-        if(values.pipePlastic) drawCheck(2.3, 7.55);
-        drawText(values.guttersLF || '', 1.4, 7.9);
-        if(values.guttersSize === '5"') drawCheck(1.9, 7.9);
-        if(values.guttersSize === '6"') drawCheck(2.3, 7.9);
-        if(values.downspoutsSize === '3x4') drawCheck(1.9, 8.25);
-        if(values.downspoutsSize === '2x3') drawCheck(1.5, 8.25);
-        drawText(values.fasciaSize || '', 1.9, 8.6);
-        if(values.woodMetal === 'Wood') drawCheck(1.5, 8.95);
-        if(values.woodMetal === 'Metal') drawCheck(1.9, 8.95);
-        drawText(values.chimneyFlashing || '', 1.9, 9.3);
-
-        // Calculations
-        drawText(values.calcA || '', 3.8, 4.4); drawText(values.calcB || '', 4.6, 4.4); drawText(values.calcC || '', 5.4, 4.4);
-        drawText(values.calcD || '', 6.2, 4.4); drawText(values.calcE || '', 7.0, 4.4); drawText(values.calcF || '', 7.8, 4.4);
-        drawText(values.calcG || '', 3.8, 4.75); drawText(values.calcH || '', 4.6, 4.75); drawText(values.calcI || '', 5.4, 4.75);
-        drawText(values.calcJ || '', 6.2, 4.75); drawText(values.calcK || '', 7.0, 4.75); drawText(values.calcL || '', 7.8, 4.75);
-        drawText(values.calcM || '', 3.8, 5.1);
-
-        drawText(values.eaveLF || '', 3.8, 5.55);
-        drawText(values.rakeLF || '', 3.8, 5.9);
-        if(values.aerialMeasurements1Story) drawCheck(4.8, 6.25);
-        if(values.aerialMeasurements2Story) drawCheck(5.6, 6.25);
-        drawText(values.totalSquares || '', 6.8, 6.25);
-
-        // Footer
-        drawText(values.maxHailDiameter || '', 1.2, 9.8);
-        drawText(values.stormDirection || '', 3.7, 9.8);
-        drawText(values.collateralDamage || '', 6.2, 9.8);
-        
-        const notes = values.notes || '';
-        const notesLines = [];
-        const maxLineChars = 85;
-        for (let i = 0; i < notes.length; i += maxLineChars) {
-            notesLines.push(notes.substring(i, i + maxLineChars));
-        }
-        notesLines.forEach((line, index) => {
-            drawText(line, 0.7, 10.15 + (index * 0.18), 10);
-        });
-
-        // --- SAVE AND DOWNLOAD ---
-        const pdfBytes = await pdfDoc.save();
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = `ScopeSheet-${values.claimNumber || 'DEMO'}.pdf`;
@@ -1085,7 +864,3 @@ export default function ScopeSheetPage() {
     </Form>
   )
 }
-
-    
-
-    
