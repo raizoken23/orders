@@ -9,14 +9,13 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { scopeSheetSchema } from '@/lib/schema/scope-sheet';
 
-const stampPdfTool = ai.defineTool(
+const generateScopeSheetFlow = ai.defineFlow(
     {
-      name: 'stampPdf',
-      description: 'Stamps data onto a PDF template.',
-      inputSchema: scopeSheetSchema,
-      outputSchema: z.object({
-        pdfBase64: z.string(),
-      }),
+        name: 'generateScopeSheetFlow',
+        inputSchema: scopeSheetSchema,
+        outputSchema: z.object({
+            pdfBase64: z.string(),
+        }),
     },
     async (data) => {
       const code = `
@@ -199,19 +198,6 @@ print(json.dumps({'pdfBase64': pdf_base64}))
         dependencies: ['pypdf', 'reportlab'],
       });
       return JSON.parse(files['stdout.txt'] as string);
-    },
-  );
-
-const generateScopeSheetFlow = ai.defineFlow(
-    {
-        name: 'generateScopeSheetFlow',
-        inputSchema: scopeSheetSchema,
-        outputSchema: z.object({
-            pdfBase64: z.string(),
-        }),
-    },
-    async (data) => {
-        return stampPdfTool(data);
     }
 );
 
