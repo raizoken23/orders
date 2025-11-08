@@ -5,12 +5,15 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Briefcase, Building, FileSpreadsheet, HeartHandshake, LayoutList, Lock, Shield, Users, MoreHorizontal } from 'lucide-react';
+import { Briefcase, Building, FileSpreadsheet, HeartHandshake, LayoutList, Lock, Shield, Users, MoreHorizontal, Link as LinkIcon, Percent } from 'lucide-react';
 import { mask } from '@/lib/secretStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { useToast } from '@/hooks/use-toast';
 
 interface AdminClientProps {
     stripe: any;
@@ -98,12 +101,23 @@ export function AdminClient({ stripe, qbo }: AdminClientProps) {
             </CardContent>
         </Card>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <section className="border bg-card text-card-foreground shadow-sm rounded-lg p-6 space-y-4">
-                <h2 className="text-2xl font-semibold font-headline flex items-center gap-2"><Briefcase /> Stripe (Payments)</h2>
-                <p className="text-sm text-muted-foreground">Status: {isStripeConnected ? <span className="text-green-500 font-medium">Connected ({mask(stripe.secretKey)})</span> : <span className="text-red-500 font-medium">Not Connected</span>}</p>
-                <StripeForm />
-                <StripeTest />
-            </section>
+            <Card className="lg:col-span-2">
+                <CardHeader>
+                    <CardTitle className="text-2xl font-semibold font-headline flex items-center gap-2"><Briefcase /> Stripe Configuration</CardTitle>
+                    <CardDescription>Manage Stripe API keys and create products. Current Status: {isStripeConnected ? <span className="text-green-500 font-medium">Connected ({mask(stripe.secretKey)})</span> : <span className="text-red-500 font-medium">Not Connected</span>}</CardDescription>
+                </CardHeader>
+                <CardContent className="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 className="font-semibold mb-4">API Keys</h3>
+                        <StripeForm />
+                        <StripeTest />
+                    </div>
+                     <div>
+                        <h3 className="font-semibold mb-4">Stripe Controls</h3>
+                        <StripeControls />
+                    </div>
+                </CardContent>
+            </Card>
 
             <section className="border bg-card text-card-foreground shadow-sm rounded-lg p-6 space-y-4">
                 <h2 className="text-2xl font-semibold font-headline flex items-center gap-2"><Building /> QuickBooks (Accounting)</h2>
@@ -175,11 +189,13 @@ function StripeTest() {
     const [webhookUrl, setWebhookUrl] = useState('');
 
     useEffect(() => {
-        setWebhookUrl(`${window.location.origin}/api/pay/webhook`);
+        if (typeof window !== 'undefined') {
+            setWebhookUrl(`${window.location.origin}/api/pay/webhook`);
+        }
     }, []);
 
     return (
-        <div className="pt-2">
+        <div className="pt-4 mt-4 border-t">
         <Button variant="secondary" onClick={async ()=>{
             const r = await fetch('/api/admin/stripe/test', { method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ amount: 500, description: 'ScopeSheet Test Charge'}) });
@@ -190,6 +206,59 @@ function StripeTest() {
     );
 }
 
+function StripeControls() {
+    const { toast } = useToast();
+    const [product, setProduct] = useState('report');
+    const [price, setPrice] = useState(29);
+    const [discount, setDiscount] = useState([0]);
+
+    const handleGenerateLink = () => {
+        const finalPrice = price * (1 - discount[0] / 100);
+        toast({
+            title: "Payment Link Generated (Mock)",
+            description: `Product: ${product}, Final Price: $${finalPrice.toFixed(2)}`,
+        });
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="space-y-2">
+                <Label>Product / Service</Label>
+                <Select value={product} onValueChange={setProduct}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a product" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="report">Standard Report</SelectItem>
+                        <SelectItem value="analysis">AI Image Analysis Pack</SelectItem>
+                        <SelectItem value="diagram">Roof Diagram Service</SelectItem>
+                        <SelectItem value="subscription">Pro Subscription (Monthly)</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="price">Price (in USD)</Label>
+                <Input id="price" type="number" value={price} onChange={e => setPrice(Number(e.target.value))} />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="discount" className="flex justify-between">
+                    <span>Discount</span>
+                    <span className="text-muted-foreground">{discount[0]}%</span>
+                </Label>
+                <div className="flex items-center gap-4">
+                    <Percent className="text-muted-foreground" />
+                    <Slider id="discount" min={0} max={100} step={5} value={discount} onValueChange={setDiscount} />
+                </div>
+            </div>
+            <Button className="w-full" onClick={handleGenerateLink}>
+                <LinkIcon className="mr-2" />
+                Generate Payment Link
+            </Button>
+        </div>
+    );
+}
+
+
 function QboForm() {
   const [clientId, setId] = useState('');
   const [clientSecret, setSec] = useState('');
@@ -198,7 +267,9 @@ function QboForm() {
   const [origin, setOrigin] = useState('');
 
   useEffect(() => {
-    setOrigin(window.location.origin);
+    if (typeof window !== 'undefined') {
+        setOrigin(window.location.origin);
+    }
   }, []);
 
 
