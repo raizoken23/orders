@@ -20,12 +20,14 @@ import {
   Settings,
   PanelLeft,
   FileUp,
+  Image,
 } from 'lucide-react'
 
 const links = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/import-claim', label: 'New Sheet', icon: FileUp },
   { href: '/scope-sheet', label: 'Scope Sheet', icon: FileText },
-  { href: '/import-claim', label: 'Import Claim', icon: FileUp },
+  { href: '/image-analysis', label: 'Image Analysis', icon: Image },
 ]
 
 const bottomLinks = [{ href: '/settings', label: 'Settings', icon: Settings }]
@@ -37,8 +39,8 @@ export default function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <LogoIcon className="size-7 text-accent" />
-          <h1 className="text-lg font-semibold font-headline text-primary-foreground">
+          <LogoIcon className="size-7 text-primary" />
+          <h1 className="text-lg font-semibold font-headline text-sidebar-foreground">
             ScopeSheet Pro
           </h1>
         </div>
