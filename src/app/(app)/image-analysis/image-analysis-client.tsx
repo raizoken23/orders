@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import {
   analyzeRoofImage,
@@ -34,6 +34,15 @@ export default function ImageAnalysisClient() {
   const [analysisResult, setAnalysisResult] =
     useState<AnalyzeRoofImageOutput | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [aiProvider, setAiProvider] = useState<'google' | 'openai'>('google');
+  const [openAIKey, setOpenAIKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    const savedProvider = localStorage.getItem('aiProvider') as 'google' | 'openai' || 'google';
+    const savedKey = localStorage.getItem('openAIKey');
+    setAiProvider(savedProvider);
+    setOpenAIKey(savedKey);
+  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -53,15 +62,23 @@ export default function ImageAnalysisClient() {
     setError(null)
     setSelectedImage(imageData)
 
+    if (aiProvider === 'openai' && (!openAIKey || openAIKey.trim() === '')) {
+      setError('OpenAI API Key is not set. Please add it in the Settings page.');
+      setAnalysisState('error');
+      return;
+    }
+
     try {
-      const result = await analyzeRoofImage({ roofImageDataUri: imageData })
+      const result = await analyzeRoofImage({ 
+        roofImageDataUri: imageData,
+        provider: aiProvider,
+        openAIKey: openAIKey || undefined,
+      });
       setAnalysisResult(result)
       setAnalysisState('success')
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      setError(
-        'An error occurred during analysis. Please try again.'
-      )
+      setError(err.message || 'An error occurred during analysis. Please try again.');
       setAnalysisState('error')
     }
   }

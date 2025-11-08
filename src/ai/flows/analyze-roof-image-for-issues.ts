@@ -9,6 +9,8 @@
 
 import {ai} from '@/ai/genkit-server';
 import {z} from 'genkit';
+import { googleAI } from '@genkit-ai/google-genai';
+import { openAI } from '@genkit-ai/compat-oai/openai';
 
 const AnalyzeRoofImageInputSchema = z.object({
   roofImageDataUri: z
@@ -16,6 +18,8 @@ const AnalyzeRoofImageInputSchema = z.object({
     .describe(
       "A photo of a roof, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
+  provider: z.enum(['google', 'openai']).optional().default('google'),
+  openAIKey: z.string().optional().describe('The OpenAI API key, if the provider is OpenAI.')
 });
 export type AnalyzeRoofImageInput = z.infer<typeof AnalyzeRoofImageInputSchema>;
 
@@ -44,7 +48,17 @@ const analyzeRoofImageFlow = ai.defineFlow(
     outputSchema: AnalyzeRoofImageOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    let model;
+    if (input.provider === 'openai') {
+        if (!input.openAIKey) {
+            throw new Error("The AI provider is set to OpenAI, but no API key was provided. Please add your key in the Settings page.");
+        }
+        model = openAI({ apiKey: input.openAIKey }).model('gpt-4o-mini');
+    } else {
+        model = googleAI().model('gemini-pro-vision');
+    }
+
+    const {output} = await prompt(input, { model });
     return output!;
   }
 );
