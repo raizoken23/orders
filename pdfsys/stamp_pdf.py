@@ -112,6 +112,8 @@ def run(event: Dict[str,Any]) -> Dict[str,str]:
 # common aliases some runners expect
 handler = run
 main = run
+execute = run
+execute_tool = run
 
 if __name__ == "__main__":
     import argparse

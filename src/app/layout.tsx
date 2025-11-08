@@ -3,8 +3,14 @@ import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 import { pdfPreflight } from '@/ai/preflight/pdfPreflight';
 
-// Run preflight check on server boot to fail fast if Python entrypoint is wrong.
-pdfPreflight();
+try {
+  // Run preflight check on server boot to fail fast if Python entrypoint is wrong.
+  pdfPreflight();
+} catch (e) {
+    console.error("PDF PREFLIGHT FAILED. The Python subsystem for PDF generation is not correctly configured.");
+    console.error(e);
+}
+
 
 export const metadata: Metadata = {
   title: 'ScopeSheet Pro',

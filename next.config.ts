@@ -23,13 +23,20 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https',
+        protocol: 'https'
+        ,
         hostname: 'picsum.photos',
         port: '',
         pathname: '/**',
       },
     ],
   },
+  experimental: {
+    outputFileTracingIncludes: {
+      "/**/*": ["pdfsys/**/*.py", "public/satellite_base.pdf", "pdfsys/coords.json.sample"]
+    },
+    serverComponentsExternalPackages: ["pypdf", "reportlab", "pymupdf"]
+  }
 };
 
 export default nextConfig;

@@ -5,7 +5,8 @@ import path from "node:path";
 import { genkit } from "genkit";
 import { googleAI } from "@genkit-ai/google-genai";
 
-const ai = genkit({
+// Initialize genkit for standalone script execution
+genkit({
     plugins: [googleAI()],
     logLevel: "debug",
     enableTracingAndMetrics: true,
@@ -25,6 +26,10 @@ const coordsPath = path.join(root,"pdfsys","coords.json.sample");
   const pathsOk = fs.existsSync(file)&&fs.existsSync(template)&&fs.existsSync(coordsPath);
   report.steps.push({ step:"paths", ok: pathsOk, details: { file, template, coordsPath } });
   console.log(`[1/3] Path check... ${pathsOk ? '✅' : '❌'}`);
+  if (!pathsOk) {
+    console.error('  ❌ Critical file paths are incorrect. Halting.');
+    process.exit(1);
+  }
 
 
   // 2. python export check

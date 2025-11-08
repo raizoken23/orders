@@ -153,7 +153,7 @@ export default function ScopeSheetPage() {
     try {
         const result = await generateScopeSheetPdf(values);
         
-        if (result && 'error' in result && (result.error || (result.stderr && !result.pdfBase64))) {
+        if (result && 'error' in result && result.error) {
             console.error('PDF Generation Failed:', result);
             setErrorDetails(result);
             toast({

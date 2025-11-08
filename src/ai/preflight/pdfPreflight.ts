@@ -15,7 +15,7 @@ export function pdfPreflight() {
         console.error(`[PDF Preflight] STDERR: ${r.stderr}`);
         // In a real scenario, you might want to throw to prevent startup,
         // but for a dev environment, logging is safer.
-        // throw new Error(`PDF_PREFLIGHT_FAIL: ${r.stdout || r.stderr}`);
+        throw new Error(`PDF_PREFLIGHT_FAIL: ${r.stdout || r.stderr}`);
     } else {
         const result = JSON.parse(r.stdout);
         if (result.ok) {
@@ -23,6 +23,7 @@ export function pdfPreflight() {
         } else {
             console.error("[PDF Preflight] Preflight check FAILED. 'run' entrypoint not found or script is invalid.");
             console.error(`[PDF Preflight] Details: ${JSON.stringify(result, null, 2)}`);
+            throw new Error("PDF_PREFLIGHT_FAIL: 'run' entrypoint not found in Python script.");
         }
     }
 }

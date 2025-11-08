@@ -1,17 +1,17 @@
-import {genkit} from 'genkit';
+import {genkit, configureGenkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
 import OpenAI from 'openai';
 
-// Check if the OPENAI_API_KEY is available in the environment
-const openAIKey = process.env.OPENAI_API_KEY;
-
+// This is the primary Genkit configuration, used by Next.js in server-side code.
 export const ai = genkit({
-  plugins: [
-    googleAI(),
-    // Only include the OpenAI plugin if the API key is present
-    openAIKey ? (OpenAI as any)({apiKey: openAIKey}) : undefined,
-  ].filter(p => p), // Filter out any undefined plugins
-  model: 'googleai/gemini-2.5-flash',
+  plugins: [googleAI()],
+  logLevel: 'debug',
+  enableTracingAndMetrics: true,
+});
+
+// This is a secondary configuration used by standalone scripts like the doctor.
+configureGenkit({
+  plugins: [googleAI()],
   logLevel: 'debug',
   enableTracingAndMetrics: true,
 });
