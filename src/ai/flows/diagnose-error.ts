@@ -14,7 +14,7 @@ import { googleAI } from '@genkit-ai/google-genai';
 import { openAI } from '@genkit-ai/compat-oai/openai';
 
 const gpt4oMini = openAI.model('gpt-4o-mini');
-const geminiFlash = googleAI.model('gemini-1.5-flash-latest');
+const geminiFlash = googleAI.model('gemini-1.5-flash');
 
 
 const DiagnoseErrorInputSchema = z.object({
