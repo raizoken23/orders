@@ -22,7 +22,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Download, FileText, Terminal, Wand2 } from 'lucide-react'
+import { Download, File, Terminal, Wand2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -43,57 +43,6 @@ import {
 import { diagnoseExecutionError } from '@/ai/flows/diagnose-error'
 import { Skeleton } from '@/components/ui/skeleton'
 
-
-const mockData: ScopeSheetData = {
-    claimNumber: 'DEMO-12345',
-    policyNumber: 'DEMO-67890',
-    clientName: 'John Appleseed',
-    clientEmail: 'j.appleseed@example.com',
-    clientPhone: '(555) 867-5309',
-    propertyAddress: '1234 Main St, Anytown, USA 12345',
-    dateOfLoss: '2025-11-08',
-    hailF: '10', hailR: '8', hailB: '12', hailL: '9',
-    windF: 'light', windR: '', windB: 'heavy', windL: '',
-    treeF: '', treeR: 'branch', treeB: '', treeL: '',
-    windDate: '2025-11-08',
-    ladderNow: true,
-    inspector: 'P Yarborough',
-    phone: '310-357-1399',
-    email: 'pyarborough@laddernow.com',
-    shingleType: ['Laminate'],
-    shingleMake: ['30 Y'],
-    otherShingle: 'Metal Accent',
-    iceWaterShield: ['Valley', 'Eave'],
-    valleyMetalLF: '40',
-    dripEdgeRadio: 'Yes',
-    dripEdge: ['Eave', 'Rake'],
-    layers: '1',
-    pitch: '6/12',
-    calcA: '100', calcB: '120', calcC: 'N/A', calcD: 'N/A', calcE: 'N/A', calcF: '150', calcG: '130', calcH: 'N/A', calcI: 'N/A', calcJ: 'N/A', calcK: 'N/A', calcL: 'N/A', calcM: 'N/A',
-    eaveLF: '150',
-    rakeLF: '180',
-    aerialMeasurements1Story: true,
-    aerialMeasurements2Story: false,
-    totalSquares: '28',
-    boxVentsMetal: true, boxVentsPlastic: true, boxVentsMetalDamaged: true,
-    ridgeVentLF: '50', ridgeVentPlastic: true,
-    turbineQtyLead: '2', turbineQtyPlastic: '',
-    hvacventQtyLead: '', hvacventQtyPlastic: '1',
-    raindiverterQtyLead: '', raindiverterQtyPlastic: '',
-    powerVentQtyLead: '1', powerVentQtyPlastic: '',
-    skylightQtyLead: '', skylightQtyPlastic: '',
-    satQtyLead: '', satQtyPlastic: '',
-    pipeQty: '3', pipeLead: false, pipePlastic: true,
-    guttersLF: '150', guttersSize: '5"',
-    downspoutsLF: '80', downspoutsSize: '2x3',
-    fasciaSize: '1x6', woodMetal: 'Metal',
-    chimneyFlashing: 'Step',
-    otherSolar: true, otherVentE: true, otherExhaustVent: false,
-    maxHailDiameter: '1.5"',
-    stormDirection: 'SW',
-    collateralDamage: 'Window Screens, AC Fins',
-    notes: 'Heavy hail damage observed on all slopes. Minor wind damage on the west-facing slope. Inspected property with homeowner present. All collateral damage was documented. Homeowner has a dog named "Sparky".',
-};
 
 export default function ScopeSheetPage() {
   const { toast } = useToast()
@@ -229,13 +178,6 @@ export default function ScopeSheetPage() {
     }
   }
 
-  const handleTestReport = () => {
-    form.reset(mockData);
-    setTimeout(() => {
-        form.handleSubmit(onSubmit)();
-    }, 100);
-  }
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -249,9 +191,11 @@ export default function ScopeSheetPage() {
             </p>
           </div>
           <div className='flex gap-2'>
-             <Button type="button" onClick={handleTestReport} variant="outline" disabled={isSubmitting}>
-                <FileText className="mr-2" />
-                {isSubmitting ? 'Testing...' : 'Test Report'}
+            <Button type="button" variant="outline" asChild>
+                <a href="/satellite_base.pdf" download="ScopeSheet-Template.pdf">
+                    <File className="mr-2" />
+                    Download Template
+                </a>
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 <Download className="mr-2" />
@@ -269,7 +213,7 @@ export default function ScopeSheetPage() {
                         Backend Diagnostic Report
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                        The PDF generation script failed. The AI assistant is analyzing the error.
+                        The PDF generation script failed. Here is the diagnostic information.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <div className="mt-2 bg-slate-950 text-white font-mono text-xs p-4 rounded-md overflow-x-auto max-h-[60vh] space-y-4">
@@ -973,3 +917,5 @@ export default function ScopeSheetPage() {
     </Form>
   )
 }
+
+    
