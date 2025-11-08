@@ -36,7 +36,7 @@ const nextConfig: NextConfig = {
     outputFileTracingIncludes: {
       "/**/*": ["./pdfsys/**/*", "./public/satellite_base.pdf"]
     },
-    serverComponentsExternalPackages: ["pypdf", "reportlab", "pymupdf", "undici"]
+    serverComponentsExternalPackages: ["pypdf", "reportlab", "pymupdf", "undici", "stripe"]
   }
 };
 

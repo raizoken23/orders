@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { request } from 'undici';
+import { getSecret } from './secretStore';
 
 type Token = {
   access_token: string;
@@ -27,6 +28,20 @@ const tokenFile = process.env.QBO_TOKEN_FILE
   ? path.resolve(process.cwd(), process.env.QBO_TOKEN_FILE)
   : null;
 
+async function cfg() {
+  const s = (await getSecret<{ clientId:string; clientSecret:string; redirectUrl?:string }>('qbo')) || {};
+  return {
+    clientId: s.clientId || process.env.QBO_CLIENT_ID!,
+    clientSecret: s.clientSecret || process.env.QBO_CLIENT_SECRET!,
+    redirectUrl: s.redirectUrl || process.env.QBO_REDIRECT_URL!,
+  };
+}
+
+async function basicAuthHeaderAsync() {
+  const c = await cfg();
+  return 'Basic ' + Buffer.from(`${c.clientId}:${c.clientSecret}`).toString('base64');
+}
+
 function readToken(): Token | null {
   if (!tokenFile || !fs.existsSync(tokenFile)) return null;
   try { return JSON.parse(fs.readFileSync(tokenFile, 'utf8')); } catch { return null; }
@@ -36,16 +51,11 @@ function writeToken(tok: Token) {
   fs.writeFileSync(tokenFile, JSON.stringify(tok, null, 2));
 }
 
-function basicAuthHeader() {
-  const id = process.env.QBO_CLIENT_ID!;
-  const secret = process.env.QBO_CLIENT_SECRET!;
-  return 'Basic ' + Buffer.from(`${id}:${secret}`).toString('base64');
-}
-
-export function authUrl(state = 'qbo') {
+export async function authUrl(state = 'qbo') {
   const u = new URL(AUTH_BASE);
-  u.searchParams.set('client_id', process.env.QBO_CLIENT_ID!);
-  u.searchParams.set('redirect_uri', process.env.QBO_REDIRECT_URL!);
+  const c = await cfg();
+  u.searchParams.set('client_id', c.clientId);
+  u.searchParams.set('redirect_uri', c.redirectUrl);
   u.searchParams.set('response_type', 'code');
   u.searchParams.set('scope', process.env.QBO_SCOPES || 'com.intuit.quickbooks.accounting');
   u.searchParams.set('state', state);
@@ -53,16 +63,17 @@ export function authUrl(state = 'qbo') {
 }
 
 export async function exchangeCodeForToken(code: string, realmId: string): Promise<Token> {
+  const c = await cfg();
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
     code,
-    redirect_uri: process.env.QBO_REDIRECT_URL!,
+    redirect_uri: c.redirectUrl,
   });
 
   const r = await request(OAUTH_BASE, {
     method: 'POST',
     headers: {
-      Authorization: basicAuthHeader(),
+      Authorization: await basicAuthHeaderAsync(),
       'Content-Type': 'application/x-www-form-urlencoded',
       Accept: 'application/json',
     },
@@ -90,7 +101,7 @@ async function refreshToken(tok: Token): Promise<Token> {
   const r = await request(OAUTH_BASE, {
     method: 'POST',
     headers: {
-      Authorization: basicAuthHeader(),
+      Authorization: await basicAuthHeaderAsync(),
       'Content-Type': 'application/x-www-form-urlencoded',
       Accept: 'application/json',
     },
