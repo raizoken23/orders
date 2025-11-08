@@ -911,7 +911,7 @@ export default function ScopeSheetPage() {
         <Card>
             <CardHeader>
                 <CardTitle className="font-headline">Notes and Key</CardTitle>
-            </Header>
+            </CardHeader>
             <CardContent className="grid md:grid-cols-3 gap-6">
                  <FormField
                     control={form.control}
@@ -960,3 +960,5 @@ export default function ScopeSheetPage() {
     </Form>
   )
 }
+
+    
