@@ -21,15 +21,25 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Download, FileText } from 'lucide-react'
+import { Download, FileText, Terminal } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useSearchParams } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { generateScopeSheetPdf } from '@/ai/flows/generate-scope-sheet'
 import { scopeSheetSchema, type ScopeSheetData } from '@/lib/schema/scope-sheet'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
 
 const mockData: ScopeSheetData = {
     claimNumber: 'DEMO-12345',
@@ -85,6 +95,9 @@ const mockData: ScopeSheetData = {
 export default function ScopeSheetPage() {
   const { toast } = useToast()
   const searchParams = useSearchParams()
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorDetails, setErrorDetails] = useState<any>(null);
+
 
   const form = useForm<z.infer<typeof scopeSheetSchema>>({
     resolver: zodResolver(scopeSheetSchema),
@@ -130,9 +143,23 @@ export default function ScopeSheetPage() {
 
 
   async function onSubmit(values: z.infer<typeof scopeSheetSchema>) {
+    setIsSubmitting(true);
+    setErrorDetails(null);
     try {
-        const { pdfBase64 } = await generateScopeSheetPdf(values);
+        const result = await generateScopeSheetPdf(values);
         
+        if (result.error || !result.pdfBase64) {
+            console.error('PDF Generation Failed:', result);
+            setErrorDetails(result);
+            toast({
+                title: 'Error Generating Report',
+                description: 'The backend script failed to generate the PDF.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        const { pdfBase64 } = result;
         const byteCharacters = atob(pdfBase64);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
@@ -153,13 +180,16 @@ export default function ScopeSheetPage() {
             description: 'Your PDF report has been downloaded.',
         });
 
-    } catch (e) {
+    } catch (e: any) {
         console.error(e);
+        setErrorDetails({ error: e.message, stderr: 'Client-side exception caught.' });
         toast({
-            title: 'Error Generating Report',
-            description: 'There was a problem creating the PDF. Please try again.',
+            title: 'Client Error',
+            description: 'There was a problem preparing the PDF request. Please try again.',
             variant: 'destructive',
         });
+    } finally {
+        setIsSubmitting(false);
     }
   }
 
@@ -183,16 +213,44 @@ export default function ScopeSheetPage() {
             </p>
           </div>
           <div className='flex gap-2'>
-             <Button type="button" onClick={handleTestReport} variant="outline">
+             <Button type="button" onClick={handleTestReport} variant="outline" disabled={isSubmitting}>
                 <FileText className="mr-2" />
-                Test Report
+                {isSubmitting ? 'Testing...' : 'Test Report'}
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={isSubmitting}>
                 <Download className="mr-2" />
-                Download Report
+                {isSubmitting ? 'Generating...' : 'Download Report'}
             </Button>
           </div>
         </div>
+
+        {errorDetails && (
+            <AlertDialog open={!!errorDetails} onOpenChange={() => setErrorDetails(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                        <Terminal className="text-red-500"/>
+                        Backend Diagnostic Report
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                        The PDF generation script failed. Here is the output from the server.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="mt-4 bg-slate-900 text-white font-mono text-xs p-4 rounded-md overflow-x-auto max-h-[50vh]">
+                        <p className="font-bold text-red-400">Error:</p>
+                        <pre className="whitespace-pre-wrap">{errorDetails.error || 'No error message provided.'}</pre>
+                        <p className="mt-4 font-bold text-yellow-400">STDERR:</p>
+                        <pre className="whitespace-pre-wrap">{errorDetails.stderr || 'No stderr output.'}</pre>
+                        <p className="mt-4 font-bold text-gray-400">STDOUT:</p>
+                        <pre className="whitespace-pre-wrap">{errorDetails.stdout || 'No stdout output.'}</pre>
+                    </div>
+                    <AlertDialogFooter>
+                    <AlertDialogAction onClick={() => setErrorDetails(null)}>Close</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        )}
+
 
         <Card>
           <CardHeader>

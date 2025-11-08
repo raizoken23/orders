@@ -12,13 +12,18 @@ import path from 'path';
 import fs from 'fs/promises';
 import os from 'os';
 
+const GenerateScopeSheetOutputSchema = z.object({
+    pdfBase64: z.string().optional(),
+    error: z.string().optional(),
+    stdout: z.string().optional(),
+    stderr: z.string().optional(),
+});
+
 const generateScopeSheetFlow = ai.defineFlow(
     {
         name: 'generateScopeSheetFlow',
         inputSchema: scopeSheetSchema,
-        outputSchema: z.object({
-            pdfBase64: z.string(),
-        }),
+        outputSchema: GenerateScopeSheetOutputSchema,
     },
     async (data) => {
         const coordsPath = path.resolve(process.cwd(), 'pdfsys/coords.json.sample');
@@ -27,24 +32,40 @@ const generateScopeSheetFlow = ai.defineFlow(
 
         // Create temporary files for payload and output
         const tempDir = os.tmpdir();
-        const payloadPath = path.join(tempDir, `payload-${Date.now()}.json`);
-        const outputPath = path.join(tempDir, `output-${Date.now()}.pdf`);
+        const uniqueId = Date.now();
+        const payloadPath = path.join(tempDir, `payload-${uniqueId}.json`);
+        const outputPath = path.join(tempDir, `output-${uniqueId}.pdf`);
 
-        await fs.writeFile(payloadPath, JSON.stringify(data));
+        await fs.writeFile(payloadPath, JSON.stringify(data, null, 2));
 
-        const command = `python ${scriptPath} ${templatePath} ${coordsPath} ${payloadPath} ${outputPath}`;
+        const command = `python3 ${scriptPath} ${templatePath} ${coordsPath} ${payloadPath} ${outputPath}`;
+        
+        console.log(`[generateScopeSheetFlow] Executing command: ${command}`);
 
         try {
-            await ai.run(command, {});
+            const { stdout, stderr } = await ai.run(command, {});
             
-            const pdfBytes = await fs.readFile(outputPath);
-            const pdfBase64 = pdfBytes.toString('base64');
-            
-            return { pdfBase64 };
+            console.log(`[generateScopeSheetFlow] STDOUT: ${stdout}`);
+            if (stderr) {
+                console.error(`[generateScopeSheetFlow] STDERR: ${stderr}`);
+            }
+
+            try {
+                const pdfBytes = await fs.readFile(outputPath);
+                const pdfBase64 = pdfBytes.toString('base64');
+                return { pdfBase64, stdout, stderr: stderr || '' };
+            } catch (readError: any) {
+                 console.error(`[generateScopeSheetFlow] Error reading output file: ${readError.message}`);
+                 return { error: `Failed to read PDF output file. STDERR: ${stderr}`, stdout, stderr };
+            }
+
+        } catch (execError: any) {
+            console.error(`[generateScopeSheetFlow] Execution failed: ${execError.message}`);
+            return { error: `Python script execution failed: ${execError.message}`, stdout: execError.stdout || '', stderr: execError.stderr || '' };
         } finally {
             // Clean up temporary files
-            await fs.unlink(payloadPath).catch(() => {});
-            await fs.unlink(outputPath).catch(() => {});
+            await fs.unlink(payloadPath).catch((err) => console.log(`[cleanup] Failed to delete payload file: ${err.message}`));
+            await fs.unlink(outputPath).catch((err) => console.log(`[cleanup] Failed to delete output file: ${err.message}`));
         }
     }
 );
