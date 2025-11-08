@@ -69,7 +69,7 @@ const scopeSheetSchema = z.object({
   calcG: z.string().optional(),
   calcH: z.string().optional(),
   calcK: z.string().optional(),
-  calcL: zstring().optional(),
+  calcL: z.string().optional(),
   calcM: z.string().optional(),
   calcI: z.string().optional(),
   calcJ: z.string().optional(),
@@ -80,12 +80,12 @@ const scopeSheetSchema = z.object({
   yesNoEaveRake: z.string().optional(),
   turbineQtyLead: z.string().optional(),
   turbineQtyPlastic: z.string().optional(),
-  hvacVentQtyLead: z.string().optional(),
-  hvacVentQtyPlastic: z.string().optional(),
-  rainDiverterQtyLead: z.string().optional(),
-  rainDiverterQtyPlastic: z.string().optional(),
-  powerVentQtyLead: z.string().optional(),
-  powerVentQtyPlastic: z.string().optional(),
+  hvacventQtyLead: z.string().optional(),
+  hvacventQtyPlastic: z.string().optional(),
+  raindiverterQtyLead: z.string().optional(),
+  raindiverterQtyPlastic: z.string().optional(),
+  powerventQtyLead: z.string().optional(),
+  powerventQtyPlastic: z.string().optional(),
   skylightQtyLead: z.string().optional(),
   skylightQtyPlastic: z.string().optional(),
   satQtyLead: z.string().optional(),
@@ -107,8 +107,8 @@ const scopeSheetSchema = z.object({
   collateralDamageR: z.string().optional(),
   collateralDamageL: z.string().optional(),
   notes: z.string().optional(),
-  boxVentsQtyLead: z.string().optional(),
-  boxVentsQtyPlastic: z.string().optional(),
+  boxventsQtyLead: z.string().optional(),
+  boxventsQtyPlastic: z.string().optional(),
   ridgeVentMetalDamaged: z.string().optional(),
   ridgeVentLF: z.string().optional(),
   ridgeVentPlastic: z.string().optional(),
@@ -161,12 +161,12 @@ const mockData: ScopeSheetData = {
     totalSquares: '28',
     aerialMeasurements1Story: '1500 sq ft',
     aerialMeasurements2Story: '1300 sq ft',
-    boxVentsQtyPlastic: '4',
-    boxVentsQtyLead: '0',
+    boxventsQtyPlastic: '4',
+    boxventsQtyLead: '0',
     ridgeVentLF: '50',
     ridgeVentPlastic: 'true',
     turbineQtyLead: '2',
-    hvacVentQtyPlastic: '1',
+    hvacventQtyPlastic: '1',
     pipesQtyPlastic: '3',
     guttersLF: '150',
     guttersSize: '5"',
@@ -176,10 +176,10 @@ const mockData: ScopeSheetData = {
     chimneyFlashing: 'Step',
     notes: 'Heavy hail damage observed on all slopes. Minor wind damage on the west-facing slope. Inspected property with homeowner present. All collateral damage was documented. Homeowner has a dog named "Sparky".',
     ridgeVentMetalDamaged: '',
-    rainDiverterQtyLead: '',
-    rainDiverterQtyPlastic: '',
-    powerVentQtyLead: '',
-    powerVentQtyPlastic: '',
+    raindiverterQtyLead: '',
+    raindiverterQtyPlastic: '',
+    powerventQtyLead: '',
+    powerventQtyPlastic: '',
     skylightQtyLead: '',
     skylightQtyPlastic: '',
     satQtyLead: '',
@@ -194,7 +194,7 @@ const mockData: ScopeSheetData = {
     collateralDamageL: '',
     yesNoEaveRake: '',
     turbineQtyPlastic: '',
-    hvacVentQtyLead: '',
+    hvacventQtyLead: '',
 };
 
 export default function ScopeSheetPage() {
@@ -251,12 +251,12 @@ export default function ScopeSheetPage() {
       yesNoEaveRake: '',
       turbineQtyLead: '',
       turbineQtyPlastic: '',
-      hvacVentQtyLead: '',
-      hvacVentQtyPlastic: '',
-      rainDiverterQtyLead: '',
-      rainDiverterQtyPlastic: '',
-      powerVentQtyLead: '',
-      powerVentQtyPlastic: '',
+      hvacventQtyLead: '',
+      hvacventQtyPlastic: '',
+      raindiverterQtyLead: '',
+      raindiverterQtyPlastic: '',
+      powerventQtyLead: '',
+      powerventQtyPlastic: '',
       skylightQtyLead: '',
       skylightQtyPlastic: '',
       satQtyLead: '',
@@ -278,8 +278,8 @@ export default function ScopeSheetPage() {
       collateralDamageR: '',
       collateralDamageL: '',
       notes: '',
-      boxVentsQtyLead: '',
-      boxVentsQtyPlastic: '',
+      boxventsQtyLead: '',
+      boxventsQtyPlastic: '',
       ridgeVentMetalDamaged: '',
       ridgeVentLF: '',
       ridgeVentPlastic: '',
@@ -291,7 +291,7 @@ export default function ScopeSheetPage() {
     params.forEach((value, key) => {
       const formKey = key as keyof ScopeSheetData;
       if (Object.keys(form.getValues()).includes(formKey)) {
-          if (formKey === 'ladderNow' || formKey === 'valleyMetalNA') {
+          if (formKey === 'ladderNow' || formKey === 'valleyMetalNA' || formKey === 'ridgeVentPlastic' || formKey === 'ridgeVentMetalDamaged') {
              form.setValue(formKey, value === 'true');
           } else if (formKey === 'iceWaterShield' || formKey === 'dripEdge') {
              form.setValue(formKey, value.split(','));
@@ -321,7 +321,6 @@ export default function ScopeSheetPage() {
 
     doc.setFont('helvetica');
 
-    // Helper to draw a checkbox
     const drawCheckbox = (x: number, y: number, checked = false, size = 0.15) => {
         doc.setLineWidth(0.01);
         doc.setDrawColor(ruleColor);
@@ -381,10 +380,10 @@ export default function ScopeSheetPage() {
     doc.line(damageTableX + 2 * colW, damageY, damageTableX + 2 * colW, damageY + damageRowH * 5);
 
     let labelY = damageY + damageRowH * 3.7;
-    ['F:', 'R:', 'B:', 'L:'].forEach((label, i) => {
-        doc.text(label, damageTableX - 0.3, labelY);
+    ['F', 'R', 'B', 'L'].forEach((label, i) => {
+        doc.text(`${label}:`, damageTableX - 0.3, labelY);
         doc.line(damageTableX, damageY + (3 - i) * damageRowH, damageTableX + damageTableW, damageY + (3-i) * damageRowH);
-        doc.text(values[`hail${label.charAt(0)}` as 'hailF'] || '', damageTableX + 0.1, labelY);
+        doc.text(values[`hail${label}` as 'hailF'] || '', damageTableX + 0.1, labelY);
         labelY -= damageRowH;
     });
 
@@ -514,7 +513,6 @@ export default function ScopeSheetPage() {
     doc.text(values.layers || '', leftColX + 0.8, currentY + 0.25);
     doc.line(leftColX + 0.7, currentY+0.28, leftColX + leftColW - 0.1, currentY+0.28);
     
-    
     // --- Accessories Box ---
     const accessoriesYStart = currentY - 0.1;
     const accessoriesHeight = 4.8;
@@ -568,7 +566,7 @@ export default function ScopeSheetPage() {
         drawCheckbox(leftColX + 1.5, accessoryY - 0.1, values.guttersSize === '5"');
         doc.text('5"', leftColX + 1.7, accessoryY - 0.02);
         drawCheckbox(leftColX + 1.5, accessoryY - 0.25, values.guttersSize === '6"');
-        doctext('6"', leftColX + 1.7, accessoryY - 0.17);
+        doc.text('6"', leftColX + 1.7, accessoryY - 0.17);
         doc.text('NA   LF', leftColX + 1.1, accessoryY - 0.1);
     });
 
@@ -599,9 +597,9 @@ export default function ScopeSheetPage() {
     
     // === SKETCH AREA ========================================
     const sketchX = leftColX + leftColW + gridStep;
-    const sketchY = margin + 0.8;
+    const sketchY = margin + 1.2;
     const sketchW = pageWidth - sketchX - margin;
-    const sketchH = pageHeight - sketchY - headerBlockY + 2.3;
+    const sketchH = pageHeight - sketchY - headerBlockY + 2.3 - (pageHeight-headerBlockY-sketchY) + 1.8;
     doc.setDrawColor(ruleColor);
     doc.rect(sketchX, sketchY, sketchW, sketchH);
 
@@ -617,36 +615,79 @@ export default function ScopeSheetPage() {
     
     // === FOOTER =============================================
     const footerY = margin;
-    const footerBlockH = 0.8;
+    const footerH = 1.0;
+    const notesX = leftColX + leftColW + gridStep;
+    const notesW = pageWidth - notesX - margin - 1.0; // leave space for compass
+    
     doc.setDrawColor(ruleColor);
     doc.setLineWidth(0.01);
-    // Notes Box
-    doc.rect(sketchX, footerY, sketchW, footerBlockH);
-    doc.text('Notes:', sketchX + 0.1, footerY + footerBlockH - 0.1);
-    doc.setFontSize(8);
-    const notesLines = doc.splitTextToSize(values.notes || '', sketchW - 0.2);
-    doc.text(notesLines, sketchX + 0.1, footerY + footerBlockH - 0.25);
-    doc.setFontSize(10);
-
-    // Hail/Storm/Collateral Box
-    const collateralX = leftColX;
-    const collateralW = leftColW + gridStep;
-    doc.rect(collateralX, footerY, collateralW, footerBlockH);
-    const collateralFields = [
-        {label: 'Max Hail Diameter:', value: values.maxHailDiameter},
-        {label: 'Storm Direction:', value: values.stormDirection},
-        {label: 'Collateral Damage:', value: ''},
-    ];
-    let collateralY = footerY + footerBlockH - 0.15;
-    collateralFields.forEach(field => {
-        doc.text(field.label, collateralX + 0.1, collateralY);
-        if (field.value) {
-            doc.text(field.value, collateralX + 1.5, collateralY);
-        }
-        doc.line(collateralX + 1.4, collateralY-0.05, collateralX + collateralW - 0.1, collateralY-0.05);
-        collateralY -= 0.2;
-    })
     
+    // --- Box with Hail, Storm, Collateral ---
+    const collateralBoxX = leftColX;
+    const collateralBoxW = leftColW + gridStep;
+    doc.rect(collateralBoxX, footerY, collateralBoxW, footerH);
+    
+    let collateralY = footerY + footerH - 0.2;
+    const collateralFields = [
+        { label: 'Max Hail Diameter:', value: values.maxHailDiameter },
+        { label: 'Storm Direction:', value: values.stormDirection },
+        { label: 'Collateral Damage:', value: '' } // This seems to be a label for the F,B,R,L fields
+    ];
+    collateralFields.forEach((field, index) => {
+        doc.text(field.label, collateralBoxX + 0.1, collateralY);
+        doc.line(collateralBoxX + 1.4, collateralY - 0.05, collateralBoxX + collateralBoxW - 0.1, collateralY - 0.05);
+        doc.text(field.value || '', collateralBoxX + 1.5, collateralY);
+        collateralY -= 0.2;
+    });
+
+    // --- Notes Box ---
+    doc.rect(notesX, footerY, notesW, footerH);
+    doc.text('Notes:', notesX + 0.1, footerY + footerH - 0.2);
+    doc.setFontSize(8);
+    const notesLines = doc.splitTextToSize(values.notes || '', notesW - 0.2);
+    doc.text(notesLines, notesX + 0.1, footerY + footerH - 0.35);
+    doc.setFontSize(10);
+    
+    // --- Compass Rose ---
+    const compassX = notesX + notesW;
+    const compassW = pageWidth - compassX - margin;
+    doc.rect(compassX, footerY, compassW, footerH);
+    const centerX = compassX + compassW / 2;
+    const centerY = footerY + footerH / 2;
+    const radius = Math.min(compassW, footerH) / 2 * 0.7;
+
+    doc.setLineWidth(0.01);
+    doc.setDrawColor(ruleColor);
+    
+    // Cardinal points lines
+    doc.line(centerX, centerY - radius, centerX, centerY + radius); // N-S
+    doc.line(centerX - radius, centerY, centerX + radius, centerY); // E-W
+
+    // Intercardinal points lines
+    const interRadius = radius * 0.7;
+    doc.line(centerX - interRadius / Math.sqrt(2), centerY - interRadius / Math.sqrt(2), centerX + interRadius / Math.sqrt(2), centerY + interRadius / Math.sqrt(2));
+    doc.line(centerX + interRadius / Math.sqrt(2), centerY - interRadius / Math.sqrt(2), centerX - interRadius / Math.sqrt(2), centerY + interRadius / Math.sqrt(2));
+    
+    // Smaller intermediate lines
+    const smallRadius = radius * 0.4;
+    const angle = 22.5 * (Math.PI / 180);
+    for (let i = 0; i < 16; i++) {
+        if (i % 2 !== 0) {
+            const startX = centerX + smallRadius * Math.cos(angle * i);
+            const startY = centerY + smallRadius * Math.sin(angle * i);
+            const endX = centerX + (smallRadius/2) * Math.cos(angle * i);
+            const endY = centerY + (smallRadius/2) * Math.sin(angle * i);
+            doc.line(startX, startY, endX, endY);
+        }
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('F', centerX, centerY + radius + 0.1);
+    doc.text('B', centerX, centerY - radius - 0.05);
+    doc.text('R', centerX + radius + 0.05, centerY + 0.05);
+    doc.text('L', centerX - radius - 0.15, centerY + 0.05);
+    doc.setFont('helvetica', 'normal');
     
     doc.save(`ScopeSheet-${values.claimNumber || 'DEMO'}.pdf`);
 
@@ -1143,21 +1184,21 @@ export default function ScopeSheetPage() {
                             <FormLabel className="text-center">Qty Lead</FormLabel>
                             <FormLabel className="text-center">Qty Plastic</FormLabel>
                         </div>
-                        {['Box Vents', 'Turbine', 'HVAC Vent', 'Rain Diverter', 'Power Vent', 'Skylight', 'SAT', 'Pipes'].map(item => {
-                            const name = item.toLowerCase().replace(' ', '') as 'boxvents' | 'turbine' | 'hvacvent' | 'raindiverter' | 'powervent' | 'skylight' | 'sat' | 'pipes';
+                        {['boxvents', 'turbine', 'hvacvent', 'raindiverter', 'powervent', 'skylight', 'sat', 'pipes'].map(item => {
+                            const name = item.charAt(0).toUpperCase() + item.slice(1).replace('vent',' Vent').replace('vents',' Vents');
                             return (
                                 <div key={item} className="grid grid-cols-3 gap-2 items-center mb-2">
-                                     <FormLabel>{item}</FormLabel>
+                                     <FormLabel>{name}</FormLabel>
                                      <FormField
                                         control={form.control}
-                                        name={`${name}QtyLead` as any}
+                                        name={`${item}QtyLead` as any}
                                         render={({ field }) => (
                                             <FormItem><FormControl><Input {...field} /></FormControl></FormItem>
                                         )}
                                     />
                                      <FormField
                                         control={form.control}
-                                        name={`${name}QtyPlastic` as any}
+                                        name={`${item}QtyPlastic` as any}
                                         render={({ field }) => (
                                             <FormItem><FormControl><Input {...field} /></FormControl></FormItem>
                                         )}
