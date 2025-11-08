@@ -3,7 +3,7 @@ import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 import { pdfPreflight } from '@/ai/preflight/pdfPreflight';
 
-// Run preflight check on server boot
+// Run preflight check on server boot to fail fast if Python entrypoint is wrong.
 pdfPreflight();
 
 export const metadata: Metadata = {

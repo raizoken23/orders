@@ -23,6 +23,7 @@ export async function callPythonTool(payload: any) {
 
   const coords = JSON.parse(fs.readFileSync(coordsPath, "utf8"));
 
+  // This is the critical fix: specifying `fn: "run"` tells Genkit which function to execute.
   const { output, error } = await ai.run({
     runtime: "python",
     file,
