@@ -28,12 +28,13 @@ const generateScopeSheetFlow = ai.defineFlow(
     },
     async (data) => {
         const masterTemplatePath = path.resolve(process.cwd(), 'public/satellite_base.pdf');
-        const coordsPath = path.resolve(process.cwd(), 'pdfsys/coords.json.sample');
+        // For Stage 1, coords and payload are not used by the python script, but we need paths.
+        const coordsPath = path.resolve(process.cwd(), 'pdfsys/coords.json.sample'); 
         const scriptPath = path.resolve(process.cwd(), 'pdfsys/stamp_pdf.py');
 
-        const tempDir = os.tmpdir();
+        // Create a temporary directory for this specific run to avoid conflicts.
         const uniqueId = `pdf-gen-${Date.now()}`;
-        const runDir = path.join(tempDir, uniqueId);
+        const runDir = path.join(os.tmpdir(), uniqueId);
         await fs.mkdir(runDir, { recursive: true });
 
         const templatePath = path.join(runDir, 'template.pdf');
@@ -47,18 +48,19 @@ const generateScopeSheetFlow = ai.defineFlow(
         console.log(`[generateScopeSheetFlow] Output Path: ${outputPath}`);
         console.log(`[generateScopeSheetFlow] Master Template Path: ${masterTemplatePath}`);
 
-
+        // Write the payload and copy the template into the temporary directory.
         await fs.writeFile(payloadPath, JSON.stringify(data, null, 2));
         await fs.copyFile(masterTemplatePath, templatePath);
-
+        console.log(`[generateScopeSheetFlow] Copied master template to temp location.`);
 
         try {
+            // STAGE 1: Call the python script with minimal arguments.
             const { stdout, stderr } = await ai.run('python', [
                 scriptPath,
                 templatePath,
-                coordsPath,
-                payloadPath,
-                outputPath,
+                outputPath, // Arg 2 for stage 1
+                coordsPath, // Dummy arg 3
+                payloadPath, // Dummy arg 4
             ]);
 
             console.log(`[generateScopeSheetFlow] STDOUT: ${stdout}`);
@@ -66,21 +68,24 @@ const generateScopeSheetFlow = ai.defineFlow(
                 console.error(`[generateScopeSheetFlow] STDERR: ${stderr}`);
             }
 
+            // After execution, check if the output file was actually created.
             try {
                 const pdfBytes = await fs.readFile(outputPath);
                 const pdfBase64 = pdfBytes.toString('base64');
+                // If we have a PDF, return success.
                 return { pdfBase64, stdout, stderr: stderr || '' };
             } catch (readError: any) {
+                // This means the python script ran without crashing but DID NOT produce an output.pdf
                 console.error(`[generateScopeSheetFlow] Error reading output file: ${readError.message}`);
-                return { error: `Failed to read PDF output file.`, stdout, stderr: stderr || readError.message };
+                return { error: `Python script ran but failed to create a PDF.`, stdout, stderr: stderr || readError.message };
             }
         } catch (execError: any) {
+            // This means the `ai.run()` command itself failed (e.g., command not found).
             console.error(`[generateScopeSheetFlow] Script execution failed: ${execError.message}`);
-            return { error: `Python script execution failed.`, stdout: execError.stdout, stderr: execError.stderr };
+            return { error: `Python script execution failed.`, stdout: execError.stdout || '', stderr: execError.stderr || execError.message };
         } finally {
-            await fs.unlink(payloadPath).catch((err) => console.log(`[cleanup] Failed to delete payload file: ${err.message}`));
-            await fs.unlink(templatePath).catch((err) => console.log(`[cleanup] Failed to delete template file: ${err.message}`));
-            await fs.unlink(outputPath).catch((err) => console.log(`[cleanup] Failed to delete output file: ${err.message}`));
+            // Cleanup the temporary files
+            await fs.rm(runDir, { recursive: true, force: true }).catch((err) => console.log(`[cleanup] Failed to delete temp directory: ${err.message}`));
         }
     }
 );
