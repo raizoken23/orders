@@ -11,10 +11,6 @@ import { scopeSheetSchema } from '@/lib/schema/scope-sheet';
 import path from 'path';
 import fs from 'fs/promises';
 import os from 'os';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
 
 const GenerateScopeSheetOutputSchema = z.object({
     pdfBase64: z.string().optional(),
@@ -23,38 +19,11 @@ const GenerateScopeSheetOutputSchema = z.object({
     stderr: z.string().optional(),
 });
 
-const stampPdfTool = ai.defineTool(
-  {
-    name: 'stampPdfTool',
-    description: 'Runs the python script to stamp data onto the PDF template.',
-    inputSchema: z.object({
-      scriptPath: z.string(),
-      templatePath: z.string(),
-      coordsPath: z.string(),
-      payloadPath: z.string(),
-      outputPath: z.string(),
-    }),
-    outputSchema: z.object({
-      stdout: z.string(),
-      stderr: z.string(),
-    }),
-  },
-  async (input) => {
-    // Always use 'python'. The Genkit environment ensures this is available.
-    const command = `python ${input.scriptPath} ${input.templatePath} ${input.coordsPath} ${input.payloadPath} ${input.outputPath}`;
-    console.log(`[stampPdfTool] Executing command: ${command}`);
-    const { stdout, stderr } = await execAsync(command);
-    return { stdout, stderr };
-  }
-);
-
-
 const generateScopeSheetFlow = ai.defineFlow(
     {
         name: 'generateScopeSheetFlow',
         inputSchema: scopeSheetSchema,
         outputSchema: GenerateScopeSheetOutputSchema,
-        tools: [stampPdfTool]
     },
     async (data) => {
         const masterTemplatePath = path.resolve(process.cwd(), 'public/satellite_base.pdf');
@@ -70,22 +39,19 @@ const generateScopeSheetFlow = ai.defineFlow(
         const outputPath = path.join(runDir, 'output.pdf');
         
         console.log(`[generateScopeSheetFlow] Temp Dir: ${runDir}`);
-        console.log(`[generateScopeSheetFlow] Script Path: ${scriptPath}`);
-        console.log(`[generateScopeSheetFlow] Output Path: ${outputPath}`);
-        console.log(`[generateScopeSheetFlow] Master Template Path: ${masterTemplatePath}`);
 
         try {
             await fs.writeFile(payloadPath, JSON.stringify(data, null, 2));
             await fs.copyFile(masterTemplatePath, templatePath);
-            console.log(`[generateScopeSheetFlow] Copied master template to temp location.`);
-
-            const { stdout, stderr } = await stampPdfTool({
+            console.log(`[generateScopeSheetFlow] Copied master template to temp location: ${templatePath}`);
+            
+            const { stdout, stderr } = await ai.run('python', [
                 scriptPath,
                 templatePath,
                 coordsPath, 
                 payloadPath,
                 outputPath,
-            });
+            ]);
 
             console.log(`[generateScopeSheetFlow] STDOUT: ${stdout}`);
             if (stderr) {
