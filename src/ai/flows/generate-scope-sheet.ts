@@ -42,9 +42,7 @@ const generateScopeSheetFlow = ai.defineFlow(
         const outputPath = path.join(runDir, 'output.pdf');
         
         console.log(`[generateScopeSheetFlow] Temp Dir: ${runDir}`);
-        console.log(`[generateScopeSheetFlow] Coords Path: ${coordsPath}`);
         console.log(`[generateScopeSheetFlow] Script Path: ${scriptPath}`);
-        console.log(`[generateScopeSheetFlow] Payload Path: ${payloadPath}`);
         console.log(`[generateScopeSheetFlow] Output Path: ${outputPath}`);
         console.log(`[generateScopeSheetFlow] Master Template Path: ${masterTemplatePath}`);
 
@@ -59,8 +57,9 @@ const generateScopeSheetFlow = ai.defineFlow(
                 scriptPath,
                 templatePath,
                 outputPath, // Arg 2 for stage 1
-                coordsPath, // Dummy arg 3
-                payloadPath, // Dummy arg 4
+                // Dummy args for stage 1 - the script expects them but doesn't use them
+                coordsPath, 
+                payloadPath,
             ]);
 
             console.log(`[generateScopeSheetFlow] STDOUT: ${stdout}`);
@@ -80,8 +79,9 @@ const generateScopeSheetFlow = ai.defineFlow(
                 return { error: `Python script ran but failed to create a PDF.`, stdout, stderr: stderr || readError.message };
             }
         } catch (execError: any) {
-            // This means the `ai.run()` command itself failed (e.g., command not found).
+            // This means the `ai.run()` command itself failed (e.g., command not found, or script exited with non-zero).
             console.error(`[generateScopeSheetFlow] Script execution failed: ${execError.message}`);
+            // IMPORTANT: Return the stdout/stderr from the execError object
             return { error: `Python script execution failed.`, stdout: execError.stdout || '', stderr: execError.stderr || execError.message };
         } finally {
             // Cleanup the temporary files
