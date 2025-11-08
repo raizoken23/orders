@@ -36,6 +36,14 @@ const generateScopeSheetFlow = ai.defineFlow(
         const payloadPath = path.join(tempDir, `payload-${uniqueId}.json`);
         const outputPath = path.join(tempDir, `output-${uniqueId}.pdf`);
 
+        console.log(`[generateScopeSheetFlow] Temp Dir: ${tempDir}`);
+        console.log(`[generateScopeSheetFlow] Coords Path: ${coordsPath}`);
+        console.log(`[generateScopeSheetFlow] Template Path: ${templatePath}`);
+        console.log(`[generateScopeSheetFlow] Script Path: ${scriptPath}`);
+        console.log(`[generateScopeSheetFlow] Payload Path: ${payloadPath}`);
+        console.log(`[generateScopeSheetFlow] Output Path: ${outputPath}`);
+
+
         await fs.writeFile(payloadPath, JSON.stringify(data, null, 2));
 
         try {
@@ -59,13 +67,13 @@ const generateScopeSheetFlow = ai.defineFlow(
             } catch (readError: any) {
                 console.error(`[generateScopeSheetFlow] Error reading output file: ${readError.message}`);
                 return { error: `Failed to read PDF output file.`, stdout, stderr: stderr || readError.message };
-            } finally {
-                await fs.unlink(payloadPath).catch((err) => console.log(`[cleanup] Failed to delete payload file: ${err.message}`));
-                await fs.unlink(outputPath).catch((err) => console.log(`[cleanup] Failed to delete output file: ${err.message}`));
             }
         } catch (execError: any) {
             console.error(`[generateScopeSheetFlow] Script execution failed: ${execError.message}`);
             return { error: `Python script execution failed.`, stdout: execError.stdout, stderr: execError.stderr };
+        } finally {
+            await fs.unlink(payloadPath).catch((err) => console.log(`[cleanup] Failed to delete payload file: ${err.message}`));
+            await fs.unlink(outputPath).catch((err) => console.log(`[cleanup] Failed to delete output file: ${err.message}`));
         }
     }
 );
