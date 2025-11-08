@@ -240,15 +240,13 @@ export default function ScopeSheetPage() {
                         <p className="font-bold text-red-400">Error:</p>
                         <pre className="whitespace-pre-wrap">{errorDetails.stderr || 'No stderr output.'}</pre>
 
-                        <p className="mt-4 font-bold text-yellow-400">Analysis & Fix:</p>
+                        <p className="mt-4 font-bold text-yellow-400">Analysis &amp; Fix:</p>
                         <pre className="whitespace-pre-wrap">
-                            The error <code className='text-red-300 bg-slate-800 px-1 rounded'>python3: command not found</code> indicates the server environment cannot find the `python3` executable.
+                            If you see a <code className='text-red-300 bg-slate-800 px-1 rounded'>command not found</code> error, it means the Python executable is not in the server's PATH. This is an environment configuration issue.
                             <br/><br/>
-                            **File to Fix:** `src/ai/flows/generate-scope-sheet.ts`
-                            <br/>
-                            **Suggested Change:** The command in the `exec` call should use `python` instead of `python3`.
+                            If the error is related to `coords.json` or a missing key, ensure all fields in the form have a corresponding entry in the `pdfsys/coords.json.sample` file.
                         </pre>
-
+                        
                         <p className="mt-4 font-bold text-gray-400">Full Error Object:</p>
                         <pre className="whitespace-pre-wrap">{JSON.stringify(errorDetails, null, 2)}</pre>
 
