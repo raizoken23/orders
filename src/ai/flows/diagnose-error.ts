@@ -8,16 +8,16 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
-export const DiagnoseErrorInputSchema = z.object({
+const DiagnoseErrorInputSchema = z.object({
   command: z.string().describe('The command that was executed.'),
   stdout: z.string().describe('The standard output from the command.'),
   stderr: z.string().describe('The standard error from the command.'),
 });
 export type DiagnoseErrorInput = z.infer<typeof DiagnoseErrorInputSchema>;
 
-export const DiagnoseErrorOutputSchema = z.object({
+const DiagnoseErrorOutputSchema = z.object({
   analysis: z.string().describe('A detailed analysis of the error, explaining the likely cause and suggesting a specific code-level fix.'),
 });
 export type DiagnoseErrorOutput = z.infer<typeof DiagnoseErrorOutputSchema>;
@@ -51,7 +51,7 @@ Provide a step-by-step diagnosis and a recommended solution. If the error is a "
 });
 
 
-export const diagnoseExecutionErrorFlow = ai.defineFlow(
+const diagnoseExecutionErrorFlow = ai.defineFlow(
     {
         name: 'diagnoseExecutionErrorFlow',
         inputSchema: DiagnoseErrorInputSchema,
