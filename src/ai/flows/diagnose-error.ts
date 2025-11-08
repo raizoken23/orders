@@ -9,11 +9,14 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { geminiPro, gpt4oMini } from 'genkitx-openai';
+
 
 const DiagnoseErrorInputSchema = z.object({
   command: z.string().describe('The command that was executed.'),
   stdout: z.string().describe('The standard output from the command.'),
   stderr: z.string().describe('The standard error from the command.'),
+  provider: z.enum(['google', 'openai']).optional().default('google'),
 });
 export type DiagnoseErrorInput = z.infer<typeof DiagnoseErrorInputSchema>;
 
@@ -58,7 +61,9 @@ const diagnoseExecutionErrorFlow = ai.defineFlow(
         outputSchema: DiagnoseErrorOutputSchema,
     },
     async (input) => {
-        const { output } = await prompt(input);
+        const model = input.provider === 'openai' ? gpt4oMini : geminiPro;
+
+        const { output } = await prompt(input, { model });
         return output!;
     }
 );
@@ -67,5 +72,3 @@ const diagnoseExecutionErrorFlow = ai.defineFlow(
 export async function diagnoseExecutionError(input: DiagnoseErrorInput): Promise<DiagnoseErrorOutput> {
   return diagnoseExecutionErrorFlow(input);
 }
-
-    

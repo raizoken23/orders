@@ -101,7 +101,16 @@ export default function ScopeSheetPage() {
   const [errorDetails, setErrorDetails] = useState<any>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
+  const [aiProvider, setAiProvider] = useState<'google' | 'openai'>('google');
 
+  useEffect(() => {
+    const savedProvider = localStorage.getItem('aiProvider');
+    if (savedProvider === 'openai') {
+      setAiProvider('openai');
+    } else {
+      setAiProvider('google');
+    }
+  }, []);
 
   const form = useForm<z.infer<typeof scopeSheetSchema>>({
     resolver: zodResolver(scopeSheetSchema),
@@ -168,6 +177,7 @@ export default function ScopeSheetPage() {
                 command: `python pdfsys/stamp_pdf.py ...`,
                 stdout: result.stdout || '',
                 stderr: result.stderr || 'No stderr output.',
+                provider: aiProvider,
               });
               setAiAnalysis(diagnosis.analysis);
             } catch (diagError) {

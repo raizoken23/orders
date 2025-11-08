@@ -15,19 +15,19 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 
 export default function SettingsPage() {
-  const [provider, setProvider] = useState('gemini');
+  const [provider, setProvider] = useState('google');
   const [openAIKey, setOpenAIKey] = useState('');
 
   // Load saved settings from localStorage on component mount
   useEffect(() => {
-    const savedProvider = localStorage.getItem('aiProvider') || 'gemini';
+    const savedProvider = localStorage.getItem('aiProvider') || 'google';
     const savedKey = localStorage.getItem('openAIKey') || '';
     setProvider(savedProvider);
     setOpenAIKey(savedKey);
   }, []);
 
   const handleProviderChange = (isGoogle: boolean) => {
-    const newProvider = isGoogle ? 'gemini' : 'openai';
+    const newProvider = isGoogle ? 'google' : 'openai';
     setProvider(newProvider);
     localStorage.setItem('aiProvider', newProvider);
   };
@@ -92,9 +92,9 @@ export default function SettingsPage() {
             <Switch
               id="provider-switch"
               checked={provider === 'openai'}
-              onCheckedChange={() => handleProviderChange(provider === 'openai')}
+              onCheckedChange={() => handleProviderChange(provider === 'google')}
             />
-            <Label htmlFor="provider-switch" className={provider === 'gemini' ? 'text-muted-foreground' : ''}>
+            <Label htmlFor="provider-switch" className={provider === 'google' ? 'text-muted-foreground' : ''}>
               OpenAI
             </Label>
           </div>

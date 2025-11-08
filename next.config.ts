@@ -33,7 +33,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     outputFileTracingIncludes: {
-      "/**/*": ["pdfsys/**/*.py", "public/satellite_base.pdf", "pdfsys/coords.json.sample"]
+      "/**/*": ["pdfsys/**/*", "public/satellite_base.pdf"]
     },
     serverComponentsExternalPackages: ["pypdf", "reportlab", "pymupdf"]
   }

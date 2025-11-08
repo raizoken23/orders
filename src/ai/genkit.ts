@@ -1,10 +1,15 @@
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
-import OpenAI from 'openai';
+import { openAI } from 'genkitx-openai';
 
 // This is the primary Genkit configuration, used by Next.js in server-side code.
 export const ai = genkit({
-  plugins: [googleAI()],
+  plugins: [
+    googleAI(),
+    openAI({
+      apiKey: process.env.OPENAI_API_KEY || 'YOUR_OPENAI_API_KEY',
+    }),
+  ],
   logLevel: 'debug',
   enableTracingAndMetrics: true,
 });
