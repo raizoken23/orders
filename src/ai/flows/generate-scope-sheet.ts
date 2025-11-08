@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow that generates a PDF scope sheet by stamping form data onto a template using a Python script.
@@ -9,14 +10,13 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { scopeSheetSchema } from '@/lib/schema/scope-sheet';
 import path from 'path';
-import fs from 'fs/promises';
-import os from 'os';
+import fs from 'fs';
 
+// Define the output schema to expect a base64 string or an error
 const GenerateScopeSheetOutputSchema = z.object({
     pdfBase64: z.string().optional(),
     error: z.string().optional(),
-    stdout: z.string().optional(),
-    stderr: z.string().optional(),
+    traceback: z.string().optional(),
 });
 
 const generateScopeSheetFlow = ai.defineFlow(
@@ -26,55 +26,66 @@ const generateScopeSheetFlow = ai.defineFlow(
         outputSchema: GenerateScopeSheetOutputSchema,
     },
     async (data) => {
-        const masterTemplatePath = path.resolve(process.cwd(), 'public/satellite_base.pdf');
-        const coordsPath = path.resolve(process.cwd(), 'pdfsys/coords.json.sample'); 
+        // Resolve paths relative to the project root
+        const templatePath = path.resolve(process.cwd(), 'public/satellite_base.pdf');
+        const coordsPath = path.resolve(process.cwd(), 'pdfsys/coords.json.sample');
         const scriptPath = path.resolve(process.cwd(), 'pdfsys/stamp_pdf.py');
 
-        const uniqueId = `pdf-gen-${Date.now()}`;
-        const runDir = path.join(os.tmpdir(), uniqueId);
-        await fs.mkdir(runDir, { recursive: true });
-
-        const templatePath = path.join(runDir, 'template.pdf');
-        const payloadPath = path.join(runDir, 'payload.json');
-        const outputPath = path.join(runDir, 'output.pdf');
-        
-        console.log(`[generateScopeSheetFlow] Temp Dir: ${runDir}`);
-
         try {
-            await fs.writeFile(payloadPath, JSON.stringify(data, null, 2));
-            await fs.copyFile(masterTemplatePath, templatePath);
-            console.log(`[generateScopeSheetFlow] Copied master template to temp location: ${templatePath}`);
+            // Log the paths for debugging
+            console.log(`[generateScopeSheetFlow] Template Path: ${templatePath}`);
+            console.log(`[generateScopeSheetFlow] Coords Path: ${coordsPath}`);
+            console.log(`[generateScopeSheetFlow] Script Path: ${scriptPath}`);
+
+            // The Genkit Python runner needs the function name `run` to be specified
+            const { output, error } = await ai.run({
+                runtime: 'python',
+                file: scriptPath,
+                fn: 'run',
+                input: {
+                    template: templatePath,
+                    coords: coordsPath,
+                    payload: data,
+                },
+            });
+
+            if (error) {
+                console.error('[generateScopeSheetFlow] ai.run reported an error:', error);
+                return { error: error.message, stdout: '', stderr: error.stack || '' };
+            }
             
-            const { stdout, stderr } = await ai.run('python', [
-                scriptPath,
-                templatePath,
-                coordsPath, 
-                payloadPath,
-                outputPath,
-            ]);
+            // The python script now returns a JSON object with either `pdfBase64` or `error`
+            const result = output as z.infer<typeof GenerateScopeSheetOutputSchema>;
 
-            console.log(`[generateScopeSheetFlow] STDOUT: ${stdout}`);
-            if (stderr) {
-                console.error(`[generateScopeSheetFlow] STDERR: ${stderr}`);
+            if (result.error) {
+                 console.error(`[generateScopeSheetFlow] Python script returned an error: ${result.error}`);
+                 console.error(`[generateScopeSheetFlow] Python Traceback: ${result.traceback}`);
+                 return { error: result.error, stderr: result.traceback, stdout: '' };
             }
 
-            try {
-                const pdfBytes = await fs.readFile(outputPath);
-                const pdfBase64 = pdfBytes.toString('base64');
-                return { pdfBase64, stdout, stderr: stderr || '' };
-            } catch (readError: any) {
-                console.error(`[generateScopeSheetFlow] Error reading output file: ${readError.message}`);
-                return { error: `Python script ran but failed to create a PDF.`, stdout, stderr: stderr || readError.message };
-            }
+            return { pdfBase64: result.pdfBase64 };
+
         } catch (execError: any) {
             console.error(`[generateScopeSheetFlow] Tool execution failed: ${execError.message}`);
-            return { error: `Tool execution failed.`, stdout: execError.stdout || '', stderr: execError.stderr || execError.message };
-        } finally {
-            await fs.rm(runDir, { recursive: true, force: true }).catch((err) => console.log(`[cleanup] Failed to delete temp directory: ${err.message}`));
+            // Provide a structured error response
+            return {
+                error: `Tool execution failed: ${execError.message}`,
+                stdout: execError.stdout || '',
+                stderr: execError.stderr || execError.stack || 'No stack trace available',
+            };
         }
     }
 );
 
 export async function generateScopeSheetPdf(data: z.infer<typeof scopeSheetSchema>) {
-    return await generateScopeSheetFlow(data);
+    const result = await generateScopeSheetFlow(data);
+    // Ensure the return type matches what the frontend expects
+    return {
+        pdfBase64: result.pdfBase64,
+        error: result.error,
+        stdout: '', // stdout is less relevant now as logic is in python script
+        stderr: result.error ? (result.traceback || result.error) : undefined
+    };
 }
+
+    

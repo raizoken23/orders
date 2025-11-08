@@ -1,5 +1,7 @@
-# python stamp_pdf.py templates/master.pdf coords.json.sample payload.json out.pdf
-import sys, json, io, os
+# pdfsys/stamp_pdf.py
+# pip deps: pypdf>=5, reportlab>=4
+import io, json, base64, os
+from typing import Any, Dict, Union
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
@@ -7,139 +9,140 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from pypdf import PdfReader, PdfWriter
 
-def draw_text(c, x, y, text, font="Helvetica", size=9):
-    try:
-        # Standard fonts don't need registration
-        if font.lower() not in ["courier", "helvetica", "times-roman", "symbol", "zapfdingbats"]:
-             # Attempt to register font if it's a path to a .ttf file
-            if font.lower().endswith('.ttf') and os.path.exists(font):
-                font_name = os.path.basename(font).replace('.ttf', '')
-                pdfmetrics.registerFont(TTFont(font_name, font))
-                c.setFont(font_name, size)
-            else:
-                # Fallback to Helvetica if font file is not found or not a ttf
-                print(f"[WARN] Font '{font}' not found or not a standard/TTF font. Falling back to Helvetica.")
-                c.setFont("Helvetica", size)
+# ---------- drawing helpers ----------
+def _draw_text(c, x_in, y_in, txt, size=10, font="Helvetica", align="left", max_w_pt=None):
+    if font != "Helvetica" and font not in pdfmetrics.getRegisteredFontNames():
+        # optional: register fallback font if present
+        font_path = os.path.join(os.path.dirname(__file__), "fonts", f"{font}.ttf")
+        if os.path.exists(font_path):
+            pdfmetrics.registerFont(TTFont(font, font_path))
         else:
-             c.setFont(font, size)
+            font = "Helvetica"
+    c.setFont(font, size)
+    text = "" if txt is None else str(txt)
+    if max_w_pt:
+        w = pdfmetrics.stringWidth(text, font, size)
+        if w > max_w_pt:
+            while len(text) > 1 and w > max_w_pt:
+                text = text[:-1]
+                w = pdfmetrics.stringWidth(text + "…", font, size)
+            text = text + "…"
+    x = x_in * inch
+    y = (11 - y_in) * inch
+    if align == "center":
+        c.drawCentredString(x, y, text)
+    elif align == "right":
+        c.drawRightString(x, y, text)
+    else:
+        c.drawString(x, y, text)
 
-        c.drawString(x * inch, (11 - y) * inch, str(text))
-    except Exception as e:
-        print(f"[ERROR] draw_text failed: {e}")
+def _draw_check(c, x_in, y_in, size_in=0.16, mark="X"):
+    x = x_in * inch; y = (11-y_in) * inch - (size_in*inch); s = size_in * inch
+    # c.rect(x, y, s, s, stroke=1, fill=0) # Don't draw the box, it's on the template
+    if str(mark).upper() == "X":
+      c.setFont("Helvetica-Bold", s * 0.9)
+      c.drawString(x + s*0.1, y + s*0.15, "X")
 
-def draw_check(c, x, y, size=0.16):
-    try:
-        x_inch = x * inch
-        y_inch = (11 - y) * inch
-        size_inch = size * inch
-        c.setFont("ZapfDingbats", size_inch * 0.9) # Use a standard font for checkmarks
-        c.drawString(x_inch, y_inch - size_inch*0.15, "✔")
-    except Exception as e:
-        print(f"[ERROR] draw_check failed: {e}")
 
-def render_overlay(coords, payload):
-    print("[DEBUG] Rendering full overlay.")
+# ---------- render + merge ----------
+def _render_overlay(coords: Dict[str, Any], payload: Dict[str, Any]) -> PdfReader:
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=letter)
-    
-    # Text Fields
-    if "text" in coords and "text" in payload:
-      for key, spec in coords["text"].items():
-          if key in payload and payload[key] not in [None, ""]:
-              print(f"[DEBUG] Drawing text for '{key}': '{payload[key]}'")
-              draw_text(c, spec["xIn"], spec["yIn"], payload[key], spec.get("font", "Helvetica"), spec.get("sizePt", 9))
-
-    # Checkbox Fields
-    if "checks" in coords and "checks" in payload:
-      for key, spec_group in coords["checks"].items():
+    # text
+    for key, spec in coords.get("text", {}).items():
+        src_keys = [key, key.split(".")[-1]]
+        val = next((payload.get(k) for k in src_keys if k in payload and payload.get(k) not in [None, ""]), spec.get("value", ""))
+        if val:
+            _draw_text(
+                c,
+                spec["xIn"], spec["yIn"], val,
+                size=spec.get("sizePt", 10),
+                font=spec.get("font", "Helvetica"),
+                align=spec.get("align", "left"),
+                max_w_pt=spec.get("maxWidthPt")
+            )
+    # checks
+    for key, spec_group in coords.get("checks", {}).items():
         payload_values = payload.get(key, [])
         if not isinstance(payload_values, list): # Handle single values like radio buttons
             payload_values = [payload_values] if payload_values else []
-
+        
         for spec in spec_group:
           if spec["val"] in payload_values:
-            print(f"[DEBUG] Drawing check for '{key}' with value '{spec['val']}'")
-            draw_check(c, spec["xIn"], spec["yIn"], spec.get("sizeIn", 0.16))
+            _draw_check(c, spec["xIn"], spec["yIn"], size_in=spec.get("sizeIn", 0.16), mark=spec.get("mark", "X"))
 
-    c.showPage()
-    c.save()
-    buf.seek(0)
-    print("[DEBUG] Full overlay rendered successfully.")
+    c.showPage(); c.save(); buf.seek(0)
     return PdfReader(buf)
 
-def merge(template_pdf, overlay_reader, out_path):
-    print(f"[DEBUG] Starting merge. Base: '{template_pdf}', Output: '{out_path}'")
+def _merge_bytes(template_pdf_path: str, overlay_reader: PdfReader) -> bytes:
+    base = PdfReader(template_pdf_path)
+    w = PdfWriter()
+    
+    # Ensure there's a page to merge onto
+    if not base.pages:
+        raise ValueError("Template PDF has no pages.")
+    
+    base.pages[0].merge_page(overlay_reader.pages[0])
+
+    for page in base.pages:
+        w.add_page(page)
+
+    out = io.BytesIO(); w.write(out); return out.getvalue()
+
+# ---------- REQUIRED ENTRYPOINT ----------
+def run(event: Dict[str, Any]) -> Dict[str, Union[str, None]]:
+    """
+    Required entrypoint for your runner.
+
+    event = {
+      "template": "public/satellite_base.pdf" | absolute path,
+      "coords": { ... } | path to JSON file,
+      "payload": { ... }                      # form data
+    }
+    Returns: {"pdfBase64": "<base64 string>"}
+    """
     try:
-        base = PdfReader(template_pdf)
-        w = PdfWriter()
-        
-        if len(base.pages) == 0:
-            print("[ERROR] Base PDF has 0 pages.")
-            return False
+        template = event["template"]
+        coords_arg: Union[str, Dict[str, Any]] = event["coords"]
+        payload: Dict[str, Any] = event.get("payload", {})
 
-        if len(overlay_reader.pages) == 0:
-            print("[ERROR] Overlay PDF has 0 pages. Cannot merge.")
-            return False
-
-        base.pages[0].merge_page(overlay_reader.pages[0])
-        
-        for page in base.pages:
-            w.add_page(page)
-        
-        with open(out_path, "wb") as f: w.write(f)
-        print(f"[DEBUG] Merge successful. Wrote final PDF to '{out_path}'.")
-        return True
-    except Exception as e:
-        print(f"[ERROR] Exception during merge process: {e}")
-        import traceback
-        traceback.print_exc(file=sys.stdout)
-        return False
-
-def preflight_checks(args):
-    print("[DEBUG] Running preflight checks...")
-    if len(args) != 5:
-        print(f"[ERROR] PREFLIGHT FAILED: Invalid number of arguments. Expected 4, got {len(args)-1}.")
-        return False, None
-    
-    template_path, coords_path, payload_path, _ = args[1:]
-
-    for p, name in [(template_path, "Template"), (coords_path, "Coordinates"), (payload_path, "Payload")]:
-        if not os.path.exists(p):
-            print(f"[ERROR] PREFLIGHT FAILED: {name} file not found at '{p}'")
-            return False, None
-    
-    print("[DEBUG] All preflight checks passed.")
-    return True, args[1:]
-
-if __name__ == "__main__":
-    print("[DEBUG] stamp_pdf.py script started.")
-    
-    passed, checked_args = preflight_checks(sys.argv)
-    if not passed:
-        sys.exit(1)
-
-    template_path, coords_path, payload_path, output_path = checked_args
-    
-    try:
-        print(f"[DEBUG] Loading coords from: {coords_path}")
-        with open(coords_path, 'r') as f:
-            coords = json.load(f)
-        
-        print(f"[DEBUG] Loading payload from: {payload_path}")
-        with open(payload_path, 'r') as f:
-            payload = json.load(f)
-
-        overlay = render_overlay(coords, payload)
-        if merge(template_path, overlay, output_path):
-            print(f"[SUCCESS] Wrote final PDF to {output_path}")
+        if isinstance(coords_arg, str):
+            with open(coords_arg, "r", encoding="utf-8") as f:
+                coords = json.load(f)
         else:
-            print("[ERROR] PDF merge failed.")
-            sys.exit(1)
+            coords = coords_arg
 
+        overlay = _render_overlay(coords, payload)
+        pdf_bytes = _merge_bytes(template, overlay)
+        b64_string = base64.b64encode(pdf_bytes).decode("ascii")
+        return {"pdfBase64": b64_string}
     except Exception as e:
-        print(f"[ERROR] An unhandled exception occurred during PDF generation: {e}")
         import traceback
-        traceback.print_exc(file=sys.stdout)
-        sys.exit(1)
+        return {"error": str(e), "traceback": traceback.format_exc()}
 
-    print("[DEBUG] stamp_pdf.py script finished.")
+
+# Optional aliases for other platforms
+handler = run  # AWS-style
+main = run     # some tools expect 'main'
+
+# ---------- CLI for local testing ----------
+if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--template", required=True)
+    ap.add_argument("--coords", required=True)
+    ap.add_argument("--payload", required=True, help="JSON file with data")
+    ap.add_argument("--out", required=True)
+    a = ap.parse_args()
+    with open(a.payload, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+    res = run({"template": a.template, "coords": a.coords, "payload": payload})
+    if res.get("pdfBase64"):
+      with open(a.out, "wb") as f:
+          f.write(base64.b64decode(res["pdfBase64"]))
+      print(f"Wrote {a.out}")
+    else:
+      print("Failed to generate PDF.")
+      print(res)
+
+    
