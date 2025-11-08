@@ -75,14 +75,13 @@ export default function ScopeSheetPage() {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [aiProvider, setAiProvider] = useState<'google' | 'openai'>('google');
+  const [openAIKey, setOpenAIKey] = useState<string | null>(null);
 
   useEffect(() => {
-    const savedProvider = localStorage.getItem('aiProvider');
-    if (savedProvider === 'openai') {
-      setAiProvider('openai');
-    } else {
-      setAiProvider('google');
-    }
+    const savedProvider = localStorage.getItem('aiProvider') as 'google' | 'openai' || 'google';
+    const savedKey = localStorage.getItem('openAIKey');
+    setAiProvider(savedProvider);
+    setOpenAIKey(savedKey);
   }, []);
 
   const form = useForm<z.infer<typeof scopeSheetSchema>>({
@@ -127,8 +126,22 @@ export default function ScopeSheetPage() {
     }
   }, [searchParams, form]);
 
+  const preflightCheck = () => {
+    if (aiProvider === 'openai' && (!openAIKey || openAIKey.trim() === '')) {
+      toast({
+        title: 'OpenAI API Key Missing',
+        description: 'Please set your OpenAI API key in the Settings page before generating a report.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+    return true;
+  };
+
 
   const handlePdfGeneration = async (values: z.infer<typeof scopeSheetSchema>, setSubmitting: (isSubmitting: boolean) => void) => {
+    if (!preflightCheck()) return;
+
     setSubmitting(true);
     setErrorDetails(null);
     setAiAnalysis(null);
@@ -151,6 +164,7 @@ export default function ScopeSheetPage() {
                 stdout: result.stdout || '',
                 stderr: result.stderr || 'No stderr output.',
                 provider: aiProvider,
+                openAIKey: openAIKey || undefined,
               });
               setAiAnalysis(diagnosis.analysis);
             } catch (diagError) {

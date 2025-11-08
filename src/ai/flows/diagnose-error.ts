@@ -13,15 +13,13 @@ import { z } from 'zod';
 import { googleAI } from '@genkit-ai/google-genai';
 import { openAI } from '@genkit-ai/compat-oai/openai';
 
-const gpt4oMini = openAI.model('gpt-4o-mini');
-const geminiFlash = googleAI.model('gemini-pro');
-
 
 const DiagnoseErrorInputSchema = z.object({
   command: z.string().describe('The command that was executed.'),
   stdout: z.string().describe('The standard output from the command.'),
   stderr: z.string().describe('The standard error from the command.'),
   provider: z.enum(['google', 'openai']).optional().default('google'),
+  openAIKey: z.string().optional().describe('The OpenAI API key, if the provider is OpenAI.')
 });
 export type DiagnoseErrorInput = z.infer<typeof DiagnoseErrorInputSchema>;
 
@@ -68,18 +66,29 @@ const diagnoseExecutionErrorFlow = ai.defineFlow(
         outputSchema: DiagnoseErrorOutputSchema,
     },
     async (input) => {
-        const model = input.provider === 'openai' ? gpt4oMini : geminiFlash;
+        let model;
+        if (input.provider === 'openai') {
+            if (!input.openAIKey) {
+                return { analysis: "The AI provider is set to OpenAI, but no API key was provided. Please add your key in the Settings page." };
+            }
+            model = openAI({ apiKey: input.openAIKey }).model('gpt-4o-mini');
+        } else {
+            model = googleAI().model('gemini-pro');
+        }
+
         try {
             const { output } = await prompt(input, { model });
             return output!;
         } catch(e: any) {
             console.error("Diagnosis AI failed:", e);
             let userFriendlyError = "The AI assistant could not analyze the error. This is often due to an invalid or missing API key for the selected provider. Please verify your key in the Settings page.";
-            if (e.message && e.message.includes("404 Not Found")) {
-                 userFriendlyError += " The specific model being requested was not found. The model name in the code may be incorrect or outdated.";
-            }
-             if (e.message && (e.message.includes("API key") || e.message.includes("authentication"))) {
-                 userFriendlyError = "The API key for the selected provider is invalid or missing. Please go to the Settings page and enter a valid API key.";
+            
+            if (e.message) {
+                 if (e.message.includes("404 Not Found") || e.message.includes("not found")) {
+                    userFriendlyError += " The specific model being requested was not found. The model name in the code may be incorrect or outdated.";
+                 } else if (e.message.includes("API key") || e.message.includes("authentication")) {
+                    userFriendlyError = "The API key for the selected provider is invalid or missing. Please go to the Settings page and enter a valid API key.";
+                 }
             }
 
             return { analysis: userFriendlyError };
