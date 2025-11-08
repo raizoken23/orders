@@ -284,7 +284,7 @@ export default function ScopeSheetPage() {
     const params = new URLSearchParams(searchParams);
     params.forEach((value, key) => {
       if (Object.keys(form.getValues()).includes(key)) {
-          if (key === 'ladderNow' || key === 'iceWaterShield' || key === 'dripEdge') {
+          if (key === 'ladderNow') {
              form.setValue(key as any, value === 'true');
           } else if (key === 'iceWaterShield' || key === 'dripEdge') {
              form.setValue(key as any, value.split(','));
@@ -388,7 +388,7 @@ export default function ScopeSheetPage() {
     let dateX = rhx + 128;
     let dateY = rhy;
     rect(dateX, dateY, 122, rh_field_h);
-    text(`Date: ${values.dateOfLoss || ''}`, dateX + 5, dateY + 11);
+    text(`Date: ${values.windDate || ''}`, dateX + 5, dateY + 11);
 
     const inspectorInfo = [
         {label: 'Ladder Now', value: values.ladderNow ? 'Yes' : 'No'},
@@ -512,8 +512,8 @@ export default function ScopeSheetPage() {
         text(item.label, lcx+5, lcy+12);
         rect(lcx+55, lcy, 42.5, lch);
         rect(lcx+97.5, lcy, 42.5, lch);
-        text(item.plastic || '', lcx+76, lcy+12, {align: 'center'});
-        text(item.lead || '', lcx+118, lcy+12, {align: 'center'});
+        text(item.lead || '', lcx+76, lcy+12, {align: 'center'});
+        text(item.plastic || '', lcx+118, lcy+12, {align: 'center'});
         lcy += lch;
     });
 
@@ -527,9 +527,9 @@ export default function ScopeSheetPage() {
     text('Qty', lcx+75, lcy+12);
     text('Lead', lcx+115, lcy+12);
     rect(lcx+55, lcy+lch, 42.5, lch);
-    text(values.pipesQtyLead || '', lcx+76, lcy+lch+12, {align:'center'});
+    text(values.pipesQtyPlastic || '', lcx+76, lcy+lch+12, {align:'center'});
     rect(lcx+97.5, lcy+lch, 42.5, lch);
-    text(values.pipesQtyPlastic || '', lcx+118, lcy+lch+12, {align:'center'});
+    text(values.pipesQtyLead || '', lcx+118, lcy+lch+12, {align:'center'});
     text('Qty', lcx+75, lcy+lch-6);
     text('Plastic', lcx+115, lcy+lch-6);
 
@@ -538,7 +538,7 @@ export default function ScopeSheetPage() {
     rect(lcx, lcy, lcw, lch, lightGreen, 'F');
     text('Gutters:', lcx+5, lcy+12);
     rect(lcx, lcy+lch, lcw, lch);
-    text(values.guttersLF ? `NA LF` : 'NA LF', lcx+5, lcy+lch+12);
+    text(values.guttersLF ? `${values.guttersLF} LF` : 'NA LF', lcx+5, lcy+lch+12);
     drawCheckbox(lcx+80, lcy+lch+4, values.guttersSize === '5"');
     text('5"', lcx+90, lcy+lch+11);
     drawCheckbox(lcx+110, lcy+lch+4, values.guttersSize === '6"');
@@ -588,9 +588,9 @@ export default function ScopeSheetPage() {
     
     // Eave, Rake, Aerial
     rect(mcx, mcy, 120, headerHeight);
-    text('Eave: LF N/A', mcx + 5, mcy + 11);
+    text(`Eave: ${values.eaveLF || 'N/A'} LF`, mcx + 5, mcy + 11);
     rect(mcx + 122, mcy, 120, headerHeight);
-    text('Rake: LF N/A', mcx + 127, mcy + 11);
+    text(`Rake: ${values.rakeLF || 'N/A'} LF`, mcx + 127, mcy + 11);
     rect(mcx + 244, mcy, 200, headerHeight);
     text('Aerial Measurements:', mcx + 249, mcy + 11);
     
@@ -598,20 +598,20 @@ export default function ScopeSheetPage() {
     // Calculations
     rect(mcx, mcy, 120, 90);
     text('Calculations:', mcx + 5, mcy + 12);
-    ['A', 'B', 'C', 'D', 'E'].forEach((l,i) => text(`${l} N/A`, mcx + 5, mcy + 28 + i*13));
+    ['A', 'B', 'C', 'D', 'E'].forEach((l,i) => text(`${l} ${values[`calc${l}` as 'calcA'] || 'N/A'}`, mcx + 5, mcy + 28 + i*13));
     rect(mcx+122, mcy, 120, 90);
-    ['F', 'G', 'H', 'I', 'J'].forEach((l,i) => text(`${l} N/A`, mcx + 127, mcy + 13 + i*15));
+    ['F', 'G', 'H', 'I', 'J'].forEach((l,i) => text(`${l} ${values[`calc${l}` as 'calcF'] || 'N/A'}`, mcx + 127, mcy + 13 + i*15));
     
     // Aerial Measurements
     rect(mcx+244, mcy, 200, 90);
-    ['K', 'L', 'M'].forEach((l,i) => text(`${l} N/A`, mcx + 249, mcy + 13 + i*15));
-    text('1 Story:', mcx+320, mcy+13);
-    text('2 Story:', mcx+320, mcy+28);
+    ['K', 'L', 'M'].forEach((l,i) => text(`${l} ${values[`calc${l}` as 'calcK'] || 'N/A'}`, mcx + 249, mcy + 13 + i*15));
+    text(`1 Story: ${values.aerialMeasurements1Story || ''}`, mcx+320, mcy+13);
+    text(`2 Story: ${values.aerialMeasurements2Story || ''}`, mcx+320, mcy+28);
 
     mcy += 90;
     // Total Squares
     rect(mcx, mcy, 242, 20);
-    text('Total Squares:', mcx+5, mcy+14);
+    text(`Total Squares: ${values.totalSquares || ''}`, mcx+5, mcy+14);
 
     mcy += 22;
     // Key
@@ -664,7 +664,7 @@ export default function ScopeSheetPage() {
     let gridX = mcx;
     let gridY = mcy + 60;
     let gridW = docWidth - gridX - margin;
-    let gridH = docHeight - gridY - margin;
+    let gridH = docHeight - gridY - margin - 25; // Adjusted for notes
     doc.setDrawColor(200);
     doc.setLineWidth(0.5);
     for (let i = 0; i <= (gridW / 10); i++) {
@@ -675,7 +675,16 @@ export default function ScopeSheetPage() {
     }
     doc.setDrawColor(0);
     doc.setLineWidth(1);
-    doc.rect(gridX, gridY, gridW, gridH);
+    rect(gridX, gridY, gridW, gridH);
+
+    // Notes Section
+    let notesY = gridY + gridH + 5;
+    rect(mcx, notesY, gridW, 20, lightGreen, 'F');
+    text('Notes:', mcx + 5, notesY + 13);
+    rect(mcx, notesY + 20, gridW, docHeight - notesY - 20 - margin);
+    doc.setFontSize(8);
+    doc.text(values.notes || '', mcx + 5, notesY + 33, { maxWidth: gridW - 10 });
+
 
     doc.save(`ScopeSheet-${values.claimNumber || 'DEMO'}.pdf`);
 
@@ -1277,7 +1286,7 @@ export default function ScopeSheetPage() {
                             <FormLabel className="text-center">Qty Plastic</FormLabel>
                         </div>
                         {['Box Vents', 'Turbine', 'HVAC Vent', 'Rain Diverter', 'Power Vent', 'Skylight', 'SAT', 'Pipes'].map(item => {
-                            const name = item.toLowerCase().replace(' ', '') as 'boxvents' | 'turbine' | 'hvacvent' | 'raindiverter' | 'powervent' | 'skylight' | 'sat' | 'pipes';
+                            const name = item.toLowerCase().replace(/ /g, '') as 'boxvents' | 'turbine' | 'hvacvent' | 'raindiverter' | 'powervent' | 'skylight' | 'sat' | 'pipes';
                             return (
                                 <div key={item} className="grid grid-cols-3 gap-2 items-center mb-2">
                                      <FormLabel>{item}</FormLabel>
