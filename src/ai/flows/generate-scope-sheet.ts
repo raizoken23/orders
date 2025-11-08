@@ -11,8 +11,6 @@ import { scopeSheetSchema } from '@/lib/schema/scope-sheet';
 import { callPythonTool } from '@/ai/lib/callPythonTool';
 import { trace } from "@opentelemetry/api";
 
-export const runtime = 'nodejs'; // Required: specify Node.js runtime for Python execution.
-
 export async function generateScopeSheetPdf(data: z.infer<typeof scopeSheetSchema>) {
     return await trace.getTracer("pdf").startActiveSpan("pdf.generate", async (span) => {
         span.setAttribute("fn","run");
