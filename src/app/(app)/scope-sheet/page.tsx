@@ -97,7 +97,7 @@ const scopeSheetSchema = z.object({
   skylightQtyLead: z.string().optional(),
   skylightQtyPlastic: z.string().optional(),
   satQtyLead: z.string().optional(),
-  satQtyPlastic: z-string().optional(),
+  satQtyPlastic: z.string().optional(),
   pipeQty: z.string().optional(),
   pipeLead: z.boolean().optional(),
   pipePlastic: z.boolean().optional(),
@@ -125,7 +125,7 @@ const scopeSheetSchema = z.object({
   ridgeVentLF: z.string().optional(),
   ridgeVentPlastic: z.boolean().optional(),
   otherSolar: z.boolean().optional(),
-  otherVentE: z-boolean().optional(),
+  otherVentE: z.boolean().optional(),
   otherExhaustVent: z.boolean().optional(),
   woodMetal: z.string().optional()
 })
@@ -1063,3 +1063,5 @@ export default function ScopeSheetPage() {
     </Form>
   )
 }
+
+    
