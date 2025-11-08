@@ -1,3 +1,4 @@
+
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -182,7 +183,7 @@ export default function ScopeSheetPage() {
               setAiAnalysis(diagnosis.analysis);
             } catch (diagError) {
                 console.error("Diagnosis AI failed:", diagError);
-                setAiAnalysis("The AI assistant could not analyze the error.");
+                setAiAnalysis("The AI assistant could not analyze the error. This may be due to a network issue, an invalid API key, or a problem with the AI provider. Please check the Raw Error (stderr) below for the specific failure reason.");
             } finally {
                 setIsDiagnosing(false);
             }
