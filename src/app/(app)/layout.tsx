@@ -10,11 +10,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <AppSidebar />
       <SidebarInset>
         <header className="flex h-14 items-center gap-4 border-b bg-card px-4 sm:px-6 md:hidden">
-          <SidebarTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <PanelLeft />
-              <span className="sr-only">Toggle Menu</span>
-            </Button>
+          <SidebarTrigger>
+            <PanelLeft />
+            <span className="sr-only">Toggle Menu</span>
           </SidebarTrigger>
           <h1 className="text-lg font-semibold font-headline">ScopeSheet Pro</h1>
         </header>

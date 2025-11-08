@@ -22,6 +22,7 @@ import {
   Scan,
   Settings,
   User,
+  PanelLeft,
 } from 'lucide-react'
 
 const links = [
@@ -46,8 +47,9 @@ export default function AppSidebar() {
           </h1>
         </div>
         <div className="md:hidden">
-          <SidebarTrigger asChild>
-            <Button variant="ghost" size="icon" />
+          <SidebarTrigger>
+            <PanelLeft />
+            <span className="sr-only">Toggle Menu</span>
           </SidebarTrigger>
         </div>
       </SidebarHeader>
