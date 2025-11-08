@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Card,
   CardContent,
@@ -194,9 +195,11 @@ export default function SettingsPage() {
                          <p className="text-xs text-muted-foreground">
                             Connect your QuickBooks account to sync invoices and payments.
                         </p>
-                        <Button variant="outline" className="w-full" disabled>
+                        <Button variant="outline" className="w-full" asChild>
+                          <Link href="/api/qbo/connect">
                             <Briefcase className="mr-2"/>
                             Connect with QuickBooks
+                          </Link>
                         </Button>
                     </div>
                      <Separator />
