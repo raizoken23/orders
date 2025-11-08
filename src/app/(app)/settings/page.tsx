@@ -23,7 +23,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ShieldCheck, Lock, Briefcase, User, Bot } from 'lucide-react';
+import { ShieldCheck, Lock, Briefcase, User, Bot, VenetianMask, Mail, ShieldQuestion } from 'lucide-react';
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -166,53 +166,59 @@ export default function SettingsPage() {
                 </AccordionContent>
               </AccordionItem>
               
-              <AccordionItem value="item-3" className="border-b-0">
+               <AccordionItem value="item-3">
                 <AccordionTrigger className="px-6 text-lg font-semibold">
                    <div className="flex items-center gap-3">
-                    <Lock className="size-5 text-primary" />
-                    Admin Settings
+                    <VenetianMask className="size-5 text-primary" />
+                    Admin
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-6 pb-6">
                   <p className="text-muted-foreground mb-4">
-                      Global settings for the application. Visible only to admins.
+                      Global settings for application integrations. Connect to third-party services.
                   </p>
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                        <h4 className="font-semibold">Access Control</h4>
-                        <p className="text-xs text-muted-foreground">
-                            To enhance security, you can restrict sign-ups to one or more email domains.
-                        </p>
-                        <div className="flex gap-2">
-                             <Input placeholder="e.g., yourcompany.com" />
-                             <Button variant="secondary">Add Domain</Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground pt-2">Only users with an email from a whitelisted domain will be able to register.</p>
+                  <Button asChild>
+                    <Link href="/admin">
+                        <Lock className="mr-2" />
+                        Go to Admin Integrations Page
+                    </Link>
+                  </Button>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-4">
+                <AccordionTrigger className="px-6 text-lg font-semibold">
+                   <div className="flex items-center gap-3">
+                    <Mail className="size-5 text-primary" />
+                    Newsletter
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
+                    <p className="text-muted-foreground mb-4">
+                      Subscribe to our newsletter to receive updates on new features and best practices.
+                    </p>
+                     <div className="flex gap-2">
+                        <Input placeholder="Enter your email" type="email" />
+                        <Button>Subscribe</Button>
                     </div>
-                     <Separator />
-                     <div className="space-y-2">
-                        <h4 className="font-semibold">QuickBooks Integration</h4>
-                         <p className="text-xs text-muted-foreground">
-                            Connect your QuickBooks account to sync invoices and payments.
-                        </p>
-                        <Button variant="outline" className="w-full" asChild>
-                          <Link href="/api/qbo/connect">
-                            <Briefcase className="mr-2"/>
-                            Connect with QuickBooks
-                          </Link>
-                        </Button>
-                    </div>
-                     <Separator />
-                    <div className="space-y-2">
-                        <h4 className="font-semibold">Monetization (Post-Beta)</h4>
-                         <p className="text-xs text-muted-foreground">
-                            Connect a Stripe account to manage subscriptions and payments after the beta period.
-                        </p>
-                        <Button variant="outline" className="w-full" disabled>
-                            <Briefcase className="mr-2"/>
-                            Connect with Stripe
-                        </Button>
-                    </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-5" className="border-b-0">
+                <AccordionTrigger className="px-6 text-lg font-semibold">
+                   <div className="flex items-center gap-3">
+                    <ShieldQuestion className="size-5 text-primary" />
+                    Legal
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
+                  <p className="text-muted-foreground mb-4">
+                      Review our legal documents and policies.
+                  </p>
+                  <div className="space-y-2">
+                    <Button variant="link" className="p-0 h-auto" asChild><Link href="/privacy-policy">Privacy Policy</Link></Button>
+                    <br/>
+                    <Button variant="link" className="p-0 h-auto" asChild><Link href="/terms-of-service">Terms of Service</Link></Button>
                   </div>
                 </AccordionContent>
               </AccordionItem>

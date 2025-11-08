@@ -26,6 +26,7 @@ import {
   FilePlus,
   CircleDollarSign,
   Briefcase,
+  VenetianMask,
 } from 'lucide-react'
 
 const links = [
@@ -41,6 +42,7 @@ const links = [
 const bottomLinks = [
   { href: '/pricing', label: 'Pricing', icon: CircleDollarSign },
   { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/admin', label: 'Admin', icon: VenetianMask },
 ]
 
 export default function AppSidebar() {
