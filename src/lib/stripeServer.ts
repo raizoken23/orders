@@ -1,5 +1,5 @@
+
 'use server';
-export const runtime = 'nodejs';
 
 import Stripe from 'stripe';
 import { getSecret } from './secretStore';
