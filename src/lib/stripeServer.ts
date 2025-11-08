@@ -1,3 +1,4 @@
+
 'use server';
 
 import Stripe from 'stripe';
@@ -12,11 +13,11 @@ export async function getStripe() {
   return new Stripe(key, { apiVersion: '2024-06-20' });
 }
 
-export function parseFeatures(meta?: Stripe.Metadata | null): string[] {
+function parseFeatures(meta?: Stripe.Metadata | null): string[] {
   if (!meta?.features) return [];
   try { const v = JSON.parse(String(meta.features)); return Array.isArray(v) ? v.map(String) : []; } catch { return []; }
 }
-export function encodeFeatures(features: string[]) {
+function encodeFeatures(features: string[]) {
   return { features: JSON.stringify(features.filter(Boolean)) };
 }
 
@@ -37,7 +38,9 @@ export async function listProductsWithPrices() {
     name: p.name,
     description: p.description || '',
     features: parseFeatures(p.metadata),
-    default_price: typeof p.default_price === 'string' ? p.default_price : p.default_price?.id || null,
+    active: p.active,
+    default_price: typeof p.default_price === 'string' ? p.default_price : p.default_price || null,
+    images: p.images,
     prices: priceByProduct[p.id] || []
   }));
 }
